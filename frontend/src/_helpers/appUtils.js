@@ -934,8 +934,9 @@ export function runQuery(_ref, queryId, queryName, confirmed = undefined, mode =
       [queryName]: {
         ..._ref.state.currentState.queries[queryName],
         isLoading: true,
-        data: [],
-        rawData: [],
+        // Don't reset data and rawData to empty arrays
+        // data: [],
+        // rawData: [],
       },
     },
     errors: {},
