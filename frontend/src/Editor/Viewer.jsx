@@ -202,11 +202,14 @@ class ViewerComponent extends React.Component {
       }
 
       if (query.options.runOnInterval) {
-        let intervalSeconds = query.options.runOnIntervalSeconds;
+        let intervalSeconds = parseInt(query.options.runOnIntervalSeconds);
 
-        // If intervalSeconds is not a number or is less than 3, default to 30 seconds
-        if (isNaN(intervalSeconds) || intervalSeconds < 3) {
+        // If intervalSeconds is not a valid integer, default to 30 seconds
+        if (isNaN(intervalSeconds)) {
           intervalSeconds = 30;
+        } else {
+          // Min interval should be 3 seconds
+          intervalSeconds = Math.max(intervalSeconds, 3);
         }
 
         queriesIntervalsState.push(
