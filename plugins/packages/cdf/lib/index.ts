@@ -4,6 +4,8 @@ import { SourceOptions, QueryOptions } from './types';
 import { parse, visit } from 'graphql';
 
 export default class CDFQueryService implements QueryService {
+  constructor() {}
+
   async run(
     sourceOptions: SourceOptions,
     queryOptions: QueryOptions,
