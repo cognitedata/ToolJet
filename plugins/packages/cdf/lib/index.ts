@@ -42,34 +42,42 @@ export default class CDFQueryService implements QueryService {
     context?: { user?: User; app?: App }
   ): Promise<QueryResult> {
     const client = await this.getClient(sourceOptions);
-    let result = {};
-    const fields = [];
     const queryAST = parse(queryOptions.query);
+    let params;
     visit(queryAST, {
       Field: {
         enter: (node) => {
           if (node.name.value === 'timeseries') {
-            result = client.datapoints.retrieve(this.transcodeDatapoints(node.arguments));
-          } else {
-            fields.push(node.name.value);
+            params = this.transcodeDatapoints(node.arguments);
           }
         },
       },
     });
+    if (params) {
+      const rawDataArray = await client.datapoints.retrieve(params);
+      const data = rawDataArray.map((rawData, index) => {
+        const timestamps = rawData.datapoints.map((point) => new Date(point.timestamp));
+        const values = rawData.datapoints.map((point) => point.value);
+        return {
+          x: timestamps,
+          y: values,
+          type: 'scatter',
+          mode: 'lines+markers',
+          name: `Series ${index + 1}`, // you may want to use a more meaningful name
+          line: {
+            color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // random color, replace with a fixed color or a color selection logic if needed
+          },
+          marker: {
+            color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // random color, replace with a fixed color or a color selection logic if needed
+          },
+        };
+      });
 
-    if (fields.length > 0) {
-      result = fields.reduce((acc, field) => {
-        if (field in result) {
-          acc[field] = result[field];
-        }
-        return acc;
-      }, {});
+      return {
+        status: 'ok',
+        data: data,
+      };
     }
-    console.error(result);
-    return {
-      status: 'ok',
-      data: result,
-    };
   }
 
   private async getClient(sourceOptions: SourceOptions, context?: { user?: User; app?: App }) {
