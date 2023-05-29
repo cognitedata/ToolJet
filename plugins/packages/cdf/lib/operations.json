@@ -1,1 +1,19 @@
-{}
+{
+  "$schema": "https://raw.githubusercontent.com/ToolJet/ToolJet/develop/plugins/schemas/operations.schema.json",
+  "title": "Graphql data query schema",
+  "description": "A schema defining graphql data query",
+  "type": "api",
+  "defaults": {},
+  "properties": {
+    "query": {
+      "label": "Query",
+      "key": "query",
+      "type": "codehinter",
+      "description": "Enter query",
+      "height": "150px"
+    }
+  },
+  "required": [
+    "query"
+  ]
+}
