@@ -78,6 +78,7 @@ class ViewerComponent extends React.Component {
       errorVersionId: null,
       errorDetails: null,
       pages: {},
+      queriesIntervalsState: [],
     };
   }
 
@@ -194,11 +195,31 @@ class ViewerComponent extends React.Component {
   };
 
   runQueries = (data_queries) => {
+    let queriesIntervalsState = [];
     data_queries.forEach((query) => {
       if (query.options.runOnPageLoad) {
         runQuery(this, query.id, query.name, undefined, 'view');
       }
+
+      if (query.options.runOnInterval) {
+        let intervalSeconds = parseInt(query.options.runOnIntervalSeconds);
+
+        // If intervalSeconds is not a valid integer, default to 30 seconds
+        if (isNaN(intervalSeconds)) {
+          intervalSeconds = 30;
+        } else {
+          // Min interval should be 3 seconds
+          intervalSeconds = Math.max(intervalSeconds, 3);
+        }
+
+        queriesIntervalsState.push(
+          setInterval(() => {
+            runQuery(this, query.id, query.name, undefined, 'view');
+          }, intervalSeconds * 1000) // convert seconds to milliseconds
+        );
+      }
     });
+    this.setState({ queriesIntervalsState: queriesIntervalsState });
   };
 
   fetchOrgEnvironmentVariables = async (slug, isPublic) => {
@@ -481,6 +502,9 @@ class ViewerComponent extends React.Component {
 
   componentWillUnmount() {
     this.subscription && this.subscription.unsubscribe();
+    this.state.queriesIntervalsState.forEach((interval) => {
+      clearInterval(interval);
+    });
   }
 
   render() {
