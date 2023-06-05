@@ -173,6 +173,8 @@
                 "send": "Send"
             },
             "runQueryOnApplicationLoad": "Run this query on application load?",
+            "runQueryOnInterval": "Run this query on interval?",
+            "runOnIntervalSeconds": "Interval length (seconds)",
             "confirmBeforeQueryRun": "Request confirmation before running query?",
             "notificationOnSuccess": "Show notification on success?",
             "successMessage": "Success Message",

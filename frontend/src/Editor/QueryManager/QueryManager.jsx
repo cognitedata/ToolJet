@@ -895,7 +895,41 @@ class QueryManagerComponent extends React.Component {
                       )}
                     />
                   </div>
-                  <div className=" mx-4 pb-3 pt-3">
+                  <div className="mx-4 pb-3 pt-3">
+                    <CustomToggleSwitch
+                      dataCy={`run-on-interval`}
+                      isChecked={this.state.options.runOnInterval}
+                      toggleSwitchFunction={this.toggleOption}
+                      action="runOnInterval"
+                      darkMode={this.props.darkMode}
+                      label={this.props.t('editor.queryManager.runQueryOnInterval', 'Run this query on interval?')}
+                    />
+                  </div>
+
+                  {this.state.options.runOnInterval && (
+                    <div className="mx-4 pb-3" style={{ paddingLeft: '100px' }}>
+                      <div className="row mt-3">
+                        <div className="col-auto" style={{ width: '200px' }}>
+                          <label className="form-label p-2 font-size-12" data-cy={'label-interval-length-input-field'}>
+                            {this.props.t('editor.queryManager.runOnIntervalSeconds', 'Interval length (seconds)')}
+                          </label>
+                        </div>
+                        <div className="col query-manager-input-elem">
+                          <input
+                            type="number"
+                            disabled={!this.state.options.runOnInterval}
+                            onChange={(e) => this.optionchanged('runOnIntervalSeconds', e.target.value)}
+                            placeholder={30}
+                            className="form-control"
+                            value={this.state.options.runOnIntervalSeconds}
+                            data-cy={'interval-length-input-field'}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className=" mx-4">
                     <CustomToggleSwitch
                       dataCy={`confirmation-before-run`}
                       isChecked={this.state.options.requestConfirmation}
@@ -908,7 +942,7 @@ class QueryManagerComponent extends React.Component {
                       )}
                     />
                   </div>
-                  <div className=" mx-4">
+                  <div className=" mx-4 pb-3 pt-3">
                     <CustomToggleSwitch
                       dataCy={`notification-on-success`}
                       isChecked={this.state.options.showSuccessNotification}

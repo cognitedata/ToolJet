@@ -1,0 +1,106 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ToolJet/ToolJet/develop/plugins/schemas/operations.schema.json",
+  "title": "Graphql data query schema",
+  "description": "A schema defining graphql data query",
+  "type": "api",
+  "defaults": {},
+  "properties": {
+    "operation": {
+      "label": "Choose Datatype",
+      "key": "operation",
+      "type": "dropdown-component-flip",
+      "description": "Single select dropdown for operation",
+      "list": [
+        {
+          "value": "retrieve_time_series",
+          "name": "Retrieve TimeSeries"
+        },
+        {
+          "value": "retrieve_events",
+          "name": "Retrieve Events"
+        },
+        {
+          "value": "retrieve_sequences",
+          "name": "Retrieve Sequences"
+        },
+        {
+          "value": "retrieve_assets",
+          "name": "Retrieve Assets"
+        },
+        {
+          "value": "retrieve_raw_table",
+          "name": "Retrieve RAW table"
+        }
+      ]
+    },
+    "retrieve_time_series": {
+    "query": {
+      "label": "Query",
+      "key": "query",
+      "type": "codehinter",
+      "description": "Enter query",
+      "height": "150px"
+    }
+    },
+    "retrieve_events": {
+      "query": {
+        "label": "Query",
+        "key": "query",
+        "type": "codehinter",
+        "description": "Enter query",
+        "height": "150px"
+      }
+    },
+    "retrieve_sequences": {
+      "query": {
+        "label": "Query",
+        "key": "query",
+        "type": "codehinter",
+        "description": "Enter query",
+        "height": "150px"
+      }
+    },
+    "retrieve_assets": {
+      "query": {
+        "label": "Query",
+        "key": "query",
+        "type": "codehinter",
+        "description": "Enter query",
+        "height": "150px"
+      }
+    },
+    "retrieve_raw_table":{
+
+      "db_name": {
+        "label": "Database Name",
+        "key": "db_name",
+        "type": "codehinter",
+        "lineNumbers": false,
+        "description": "Enter Database Name",
+        "height": "36px",
+        "className": "codehinter-plugins col-4",
+        "placeholder": "Enter Database Name"
+      },
+      "table_name": {
+        "label": "Table Name",
+        "key": "table_name",
+        "type": "codehinter",
+        "lineNumbers": false,
+        "description": "Enter Table Name",
+        "height": "36px",
+        "className": "codehinter-plugins col-4",
+        "placeholder": "Enter Table Name"
+      },
+      "row_limit": {
+        "label": "Limit",
+        "key": "row_limit",
+        "type": "codehinter",
+        "lineNumbers": false,
+        "description": "Row limit",
+        "height": "36px",
+        "className": "codehinter-plugins col-4",
+        "placeholder": "None"
+      }
+    }
+  }
+}

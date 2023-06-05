@@ -927,6 +927,18 @@ export function runQuery(_ref, queryId, queryName, confirmed = undefined, mode =
       return;
     }
   }
+
+  // Check if data and rawData are already defined and are not an empty object (first page load)
+  // If they are an empty object set them to an empty array to render component in empty state
+  const initialData =
+    Object.keys(_ref.state.currentState.queries[queryName]?.data || {}).length === 0
+      ? []
+      : _ref.state.currentState.queries[queryName]?.data;
+  const initialRawData =
+    Object.keys(_ref.state.currentState.queries[queryName]?.rawData || {}).length === 0
+      ? []
+      : _ref.state.currentState.queries[queryName]?.rawData;
+
   const newState = {
     ..._ref.state.currentState,
     queries: {
@@ -934,8 +946,8 @@ export function runQuery(_ref, queryId, queryName, confirmed = undefined, mode =
       [queryName]: {
         ..._ref.state.currentState.queries[queryName],
         isLoading: true,
-        data: [],
-        rawData: [],
+        data: initialData,
+        rawData: initialRawData,
       },
     },
     errors: {},
