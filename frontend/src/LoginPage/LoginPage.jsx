@@ -5,6 +5,7 @@ import { Link, Navigate } from 'react-router-dom';
 import queryString from 'query-string';
 import GoogleSSOLoginButton from '@ee/components/LoginPage/GoogleSSOLoginButton';
 import GitSSOLoginButton from '@ee/components/LoginPage/GitSSOLoginButton';
+import AzureSSOLoginButton from '@ee/components/LoginPage/AzureSSOLoginButton';
 import { getSubpath, getWorkspaceId, validateEmail } from '../_helpers/utils';
 import { ShowLoading } from '@/_components';
 import { withTranslation } from 'react-i18next';
@@ -213,7 +214,7 @@ class LoginPageComponent extends React.Component {
                     </div>
                   ) : (
                     <div className="common-auth-container-wrapper ">
-                      {!configs?.form && !configs?.git && !configs?.google && (
+                      {!configs?.form && !configs?.git && !configs?.google && !configs?.azure && (
                         <div className="text-center-onboard">
                           <h2 data-cy="no-login-methods-warning">
                             {this.props.t(
@@ -226,6 +227,7 @@ class LoginPageComponent extends React.Component {
                       <div>
                         {(this.state?.configs?.google?.enabled ||
                           this.state?.configs?.git?.enabled ||
+                          this.state?.configs?.azure?.enabled ||
                           configs?.form?.enabled) && (
                           <>
                             <h2 className="common-auth-section-header sign-in-header" data-cy="sign-in-header">
@@ -269,7 +271,17 @@ class LoginPageComponent extends React.Component {
                             />
                           </div>
                         )}
-                        {(this.state?.configs?.google?.enabled || this.state?.configs?.git?.enabled) &&
+                        {this.state?.configs?.azure?.enabled && (
+                          <div className="login-sso-wrapper">
+                            <AzureSSOLoginButton
+                              configs={this.state?.configs?.azure?.configs}
+                              configId={this.state?.configs?.azure?.config_id}
+                            />
+                          </div>
+                        )}
+                        {(this.state?.configs?.google?.enabled ||
+                          this.state?.configs?.git?.enabled ||
+                          this.state?.configs?.azure?.enabled) &&
                           configs?.form?.enabled && (
                             <div className="separator-onboarding ">
                               <div className="mt-2 separator" data-cy="onboarding-separator">

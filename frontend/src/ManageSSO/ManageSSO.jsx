@@ -4,7 +4,7 @@ import { GeneralSettings } from './GeneralSettings';
 import { Google } from './Google';
 import { Loader } from './Loader';
 import { Git } from './Git';
-// eslint-disable-next-line import/no-unresolved
+import { Azure } from './Azure';
 import ErrorBoundary from '@/Editor/ErrorBoundary';
 import { toast } from 'react-hot-toast';
 import FolderList from '@/_ui/FolderList/FolderList';
@@ -14,6 +14,7 @@ export function ManageSSO({ darkMode }) {
     { id: 'general-settings', label: 'General Settings' },
     { id: 'google', label: 'Google' },
     { id: 'git', label: 'GitHub' },
+    { id: 'azure', label: 'Azure' },
   ];
   const changePage = useCallback(
     (page) => {
@@ -41,6 +42,8 @@ export function ManageSSO({ darkMode }) {
         return <Google updateData={updateData} settings={ssoData?.sso_configs?.find((obj) => obj.sso === 'google')} />;
       case 'git':
         return <Git updateData={updateData} settings={ssoData?.sso_configs?.find((obj) => obj.sso === 'git')} />;
+      case 'azure':
+        return <Azure updateData={updateData} settings={ssoData?.sso_configs?.find((obj) => obj.sso === 'azure')} />;
       default:
         return <Loader />;
     }

@@ -12,11 +12,18 @@ import { Organization } from './organization.entity';
 type Google = {
   clientId: string;
 };
+
 type Git = {
   clientId: string;
   clientSecret: string;
   hostName?: string;
 };
+
+type Azure = {
+  clientId: string;
+  tenantId: string;
+};
+
 @Entity({ name: 'sso_configs' })
 export class SSOConfigs {
   @PrimaryGeneratedColumn('uuid')
@@ -26,10 +33,10 @@ export class SSOConfigs {
   organizationId: string;
 
   @Column({ name: 'sso' })
-  sso: 'google' | 'git' | 'form';
+  sso: 'google' | 'git' | 'azure' | 'form';
 
   @Column({ type: 'json' })
-  configs: Google | Git;
+  configs: Google | Git | Azure;
 
   @Column({ name: 'enabled' })
   enabled: boolean;

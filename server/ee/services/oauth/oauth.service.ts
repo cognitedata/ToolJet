@@ -21,6 +21,7 @@ import { dbTransactionWrap } from 'src/helpers/utils.helper';
 import { DeepPartial, EntityManager } from 'typeorm';
 import { GitOAuthService } from './git_oauth.service';
 import { GoogleOAuthService } from './google_oauth.service';
+import { AzureOAuthService } from './azure_oauth.service';
 import UserResponse from './models/user_response';
 import { Response } from 'express';
 
@@ -33,6 +34,7 @@ export class OauthService {
     private readonly organizationUsersService: OrganizationUsersService,
     private readonly googleOAuthService: GoogleOAuthService,
     private readonly gitOAuthService: GitOAuthService,
+    private readonly azureOAuthService: AzureOAuthService,
     private configService: ConfigService
   ) {}
 
@@ -103,7 +105,7 @@ export class OauthService {
     return user;
   }
 
-  #getSSOConfigs(ssoType: 'google' | 'git'): Partial<SSOConfigs> {
+  #getSSOConfigs(ssoType: 'google' | 'git' | 'azure'): Partial<SSOConfigs> {
     switch (ssoType) {
       case 'google':
         return {
@@ -119,12 +121,20 @@ export class OauthService {
             hostName: this.configService.get<string>('SSO_GIT_OAUTH2_HOST'),
           },
         };
+      case 'azure':
+        return {
+          enabled: !!this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+          configs: {
+            clientId: this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+            tenantId: this.configService.get<string>('SSO_AZURE_OAUTH2_TENANT_ID'),
+          },
+        };
       default:
         return;
     }
   }
 
-  #getInstanceSSOConfigs(ssoType: 'google' | 'git'): DeepPartial<SSOConfigs> {
+  #getInstanceSSOConfigs(ssoType: 'google' | 'git' | 'azure'): DeepPartial<SSOConfigs> {
     return {
       organization: {
         enableSignUp: this.configService.get<string>('SSO_DISABLE_SIGNUPS') !== 'true',
@@ -185,6 +195,10 @@ export class OauthService {
 
       case 'git':
         userResponse = await this.gitOAuthService.signIn(token, configs);
+        break;
+
+      case 'azure':
+        userResponse = await this.azureOAuthService.signIn(token, configs);
         break;
 
       default:

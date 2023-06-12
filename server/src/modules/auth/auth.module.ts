@@ -13,7 +13,7 @@ import { OrganizationsService } from 'src/services/organizations.service';
 import { OrganizationUsersService } from 'src/services/organization_users.service';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '@services/email.service';
-import { OauthService, GoogleOAuthService, GitOAuthService } from '@ee/services/oauth';
+import { OauthService, GoogleOAuthService, GitOAuthService, AzureOAuthService } from '@ee/services/oauth';
 import { OauthController } from '@ee/controllers/oauth.controller';
 import { GroupPermission } from 'src/entities/group_permission.entity';
 import { App } from 'src/entities/app.entity';
@@ -76,6 +76,7 @@ import { SessionScheduler } from 'src/schedulers/session.scheduler';
     OauthService,
     GoogleOAuthService,
     GitOAuthService,
+    AzureOAuthService,
     FilesService,
     GroupPermissionsService,
     EncryptionService,

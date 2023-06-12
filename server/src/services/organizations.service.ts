@@ -100,6 +100,7 @@ export class OrganizationsService {
   }
 
   constructSSOConfigs() {
+    console.log('foo azure 1');
     return {
       google: {
         enabled: !!this.configService.get<string>('SSO_GOOGLE_OAUTH2_CLIENT_ID'),
@@ -112,6 +113,13 @@ export class OrganizationsService {
         configs: {
           client_id: this.configService.get<string>('SSO_GIT_OAUTH2_CLIENT_ID'),
           host_name: this.configService.get<string>('SSO_GIT_OAUTH2_HOST'),
+        },
+      },
+      azure: {
+        enabled: !!this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+        configs: {
+          client_id: this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+          tenant_id: this.configService.get<string>('SSO_AZURE_OAUTH2_TENANT_ID'),
         },
       },
       form: {
@@ -346,6 +354,7 @@ export class OrganizationsService {
     if (!result) return;
 
     if (addInstanceLevelSSO && result.inheritSSO) {
+      console.log('foo sso');
       if (
         this.configService.get<string>('SSO_GOOGLE_OAUTH2_CLIENT_ID') &&
         !result.ssoConfigs?.some((config) => config.sso === 'google')
@@ -353,6 +362,7 @@ export class OrganizationsService {
         if (!result.ssoConfigs) {
           result.ssoConfigs = [];
         }
+        console.log('foo google');
         result.ssoConfigs.push({
           sso: 'google',
           enabled: true,
@@ -379,6 +389,23 @@ export class OrganizationsService {
               this.configService.get<string>('SSO_GIT_OAUTH2_CLIENT_SECRET')
             ),
             hostName: this.configService.get<string>('SSO_GIT_OAUTH2_HOST'),
+          },
+        });
+      }
+      if (
+        this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID') &&
+        !result.ssoConfigs?.some((config) => config.sso === 'azure')
+      ) {
+        console.log('foo azure');
+        if (!result.ssoConfigs) {
+          result.ssoConfigs = [];
+        }
+        result.ssoConfigs.push({
+          sso: 'azure',
+          enabled: true,
+          configs: {
+            clientId: this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+            tenantId: this.configService.get<string>('SSO_AZURE_OAUTH2_TENANT_ID'),
           },
         });
       }
@@ -469,7 +496,7 @@ export class OrganizationsService {
   async updateOrganizationConfigs(organizationId: string, params: any) {
     const { type, configs, enabled } = params;
 
-    if (!(type && ['git', 'google', 'form'].includes(type))) {
+    if (!(type && ['git', 'google', 'azure', 'form'].includes(type))) {
       throw new BadRequestException();
     }
 
