@@ -21,7 +21,7 @@ import { dbTransactionWrap } from 'src/helpers/utils.helper';
 import { DeepPartial, EntityManager } from 'typeorm';
 import { GitOAuthService } from './git_oauth.service';
 import { GoogleOAuthService } from './google_oauth.service';
-import { AzureOAuthService } from './azure_oauth.service';
+import { CDFAzureOAuthService } from './cdf_azure_oauth.service';
 import UserResponse from './models/user_response';
 import { Response } from 'express';
 
@@ -34,7 +34,7 @@ export class OauthService {
     private readonly organizationUsersService: OrganizationUsersService,
     private readonly googleOAuthService: GoogleOAuthService,
     private readonly gitOAuthService: GitOAuthService,
-    private readonly azureOAuthService: AzureOAuthService,
+    private readonly azureOAuthService: CDFAzureOAuthService,
     private configService: ConfigService
   ) {}
 
@@ -105,7 +105,7 @@ export class OauthService {
     return user;
   }
 
-  #getSSOConfigs(ssoType: 'google' | 'git' | 'azure'): Partial<SSOConfigs> {
+  #getSSOConfigs(ssoType: 'google' | 'git' | 'cdf_azure'): Partial<SSOConfigs> {
     switch (ssoType) {
       case 'google':
         return {
@@ -121,12 +121,14 @@ export class OauthService {
             hostName: this.configService.get<string>('SSO_GIT_OAUTH2_HOST'),
           },
         };
-      case 'azure':
+      case 'cdf_azure':
         return {
-          enabled: !!this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+          enabled: !!this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_ID'),
           configs: {
-            clientId: this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
-            tenantId: this.configService.get<string>('SSO_AZURE_OAUTH2_TENANT_ID'),
+            cdfBaseUrl: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CDF_BASE_URL'),
+            clientId: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_ID'),
+            clientSecret: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_SECRET'),
+            tenantId: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_TENANT_ID'),
           },
         };
       default:
@@ -134,7 +136,7 @@ export class OauthService {
     }
   }
 
-  #getInstanceSSOConfigs(ssoType: 'google' | 'git' | 'azure'): DeepPartial<SSOConfigs> {
+  #getInstanceSSOConfigs(ssoType: 'google' | 'git' | 'cdf_azure'): DeepPartial<SSOConfigs> {
     return {
       organization: {
         enableSignUp: this.configService.get<string>('SSO_DISABLE_SIGNUPS') !== 'true',
@@ -197,7 +199,7 @@ export class OauthService {
         userResponse = await this.gitOAuthService.signIn(token, configs);
         break;
 
-      case 'azure':
+      case 'cdf_azure':
         userResponse = await this.azureOAuthService.signIn(token, configs);
         break;
 

@@ -128,7 +128,7 @@ class SignupPageComponent extends React.Component {
                         this.state.configs?.enable_sign_up &&
                         !this.state.configs?.git?.enabled &&
                         !this.state.configs?.google?.enabled &&
-                        !this.state.configs?.azure?.enabled)) && (
+                        !this.state.configs?.cdf_azure?.enabled)) && (
                       <SignupStatusCard text={'Signup has been disabled by your workspace admin.'} />
                     )}
                     {this.state.configs?.enable_sign_up && (
@@ -150,18 +150,18 @@ class SignupPageComponent extends React.Component {
                             />
                           </div>
                         )}
-                        {this.state.configs?.azure?.enabled && (
+                        {this.state.configs?.cdf_azure?.enabled && (
                           <div className="login-sso-wrapper">
                             <AzureSSOLoginButton
-                              configs={this.state.configs?.azure?.configs}
-                              configId={this.state.configs?.azure?.config_id}
+                              configs={this.state.configs?.cdf_azure?.configs}
+                              configId={this.state.configs?.cdf_azure?.config_id}
                               text={this.props.t('confirmationPage.signupWithAzure', 'Sign up with Azure')}
                             />
                           </div>
                         )}
                         {(this.state.configs?.git?.enabled ||
                           this.state.configs?.google?.enabled ||
-                          this.state.configs?.azure?.enabled) &&
+                          this.state.configs?.cdf_azure?.enabled) &&
                           this.isFormSignUpEnabled() && (
                             <div className="separator-signup">
                               <div className="mt-2 separator" data-cy="onboarding-separator">

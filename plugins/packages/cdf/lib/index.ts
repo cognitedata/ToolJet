@@ -4,8 +4,31 @@ import { SourceOptions, QueryOptions } from './types';
 import { parse, visit } from 'graphql';
 import { DatapointsMultiQuery, DatapointsQueryExternalId } from '@cognite/sdk/dist/src';
 
+function calculateGranularity(start: Date, end: Date): string | null {
+  const targetPoints = 300;
+
+  const durationMs = end.getTime() - start.getTime();
+  const averageDurationPerPointMs = durationMs / targetPoints;
+
+  return formatGranularity(averageDurationPerPointMs);
+}
+
+function formatGranularity(granularity: number): string {
+  const secGranularity = granularity / 10000;
+  const days = Math.floor(secGranularity / (24 * 3600));
+  const hours = Math.floor((secGranularity % (24 * 3600)) / 24);
+  const minutes = Math.floor(secGranularity % 60);
+
+  if (days > 0) return `${days}d`;
+  if (hours > 0) return `${hours}h`;
+  if (minutes > 0) return `${minutes}m`;
+
+  return '1h';
+}
+
 export default class CDFQueryService implements QueryService {
   constructor() {}
+
   private transcodeDatapoints(args) {
     const result: DatapointsMultiQuery = { items: [] };
 
@@ -54,10 +77,15 @@ export default class CDFQueryService implements QueryService {
       },
     });
     if (params) {
-      const rawDataArray = await client.datapoints.retrieve(params);
+      const rawDataArray = await client.datapoints.retrieve({
+        ...params,
+        limit: 300,
+        aggregates: ['average'],
+        granularity: calculateGranularity(new Date(params.items[0].start), new Date(params.items[0].end)),
+      });
       const data = rawDataArray.map((rawData, index) => {
         const timestamps = rawData.datapoints.map((point) => new Date(point.timestamp));
-        const values = rawData.datapoints.map((point) => point.value);
+        const values = rawData.datapoints.map((point) => point.average);
         return {
           x: timestamps,
           y: values,
@@ -89,7 +117,7 @@ export default class CDFQueryService implements QueryService {
         baseUrl: sourceOptions.url,
         appId: 'tooljet-app',
         getToken: () => {
-          return Promise.resolve('token');
+          return Promise.resolve('');
           // return getCurrentToken(true, sourceOptions['tokenData'], userData?.id, isAppPublic);
         },
       })

@@ -60,6 +60,9 @@ function login(email, password, organizationId) {
     credentials: 'include',
   };
 
+  console.log(email, password, organizationId);
+  console.log(requestOptions);
+
   return fetch(`${config.apiUrl}/authenticate${organizationId ? `/${organizationId}` : ''}`, requestOptions)
     .then(handleResponseWithoutValidation)
     .then((user) => {

@@ -30,6 +30,7 @@ class LoginPageComponent extends React.Component {
       current_organization_name: null,
     };
     this.organizationId = props.params.organizationId;
+    console.log(`org id: ${props.params.organizationId}`);
   }
   darkMode = localStorage.getItem('darkMode') === 'true';
 
@@ -193,6 +194,7 @@ class LoginPageComponent extends React.Component {
 
   render() {
     const { isLoading, configs, isGettingConfigs, navigateToLogin } = this.state;
+    console.log(this.state?.configs);
     return (
       <>
         {navigateToLogin ? (
@@ -227,7 +229,7 @@ class LoginPageComponent extends React.Component {
                       <div>
                         {(this.state?.configs?.google?.enabled ||
                           this.state?.configs?.git?.enabled ||
-                          this.state?.configs?.azure?.enabled ||
+                          this.state?.configs?.cdf_azure?.enabled ||
                           configs?.form?.enabled) && (
                           <>
                             <h2 className="common-auth-section-header sign-in-header" data-cy="sign-in-header">
@@ -271,17 +273,17 @@ class LoginPageComponent extends React.Component {
                             />
                           </div>
                         )}
-                        {this.state?.configs?.azure?.enabled && (
+                        {this.state?.configs?.cdf_azure?.enabled && (
                           <div className="login-sso-wrapper">
                             <AzureSSOLoginButton
-                              configs={this.state?.configs?.azure?.configs}
-                              configId={this.state?.configs?.azure?.config_id}
+                              configs={this.state?.configs?.cdf_azure?.configs}
+                              configId={this.state?.configs?.cdf_azure?.config_id}
                             />
                           </div>
                         )}
                         {(this.state?.configs?.google?.enabled ||
                           this.state?.configs?.git?.enabled ||
-                          this.state?.configs?.azure?.enabled) &&
+                          this.state?.configs?.cdf_azure?.enabled) &&
                           configs?.form?.enabled && (
                             <div className="separator-onboarding ">
                               <div className="mt-2 separator" data-cy="onboarding-separator">

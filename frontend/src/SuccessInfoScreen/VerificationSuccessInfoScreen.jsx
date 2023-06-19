@@ -169,7 +169,7 @@ export const VerificationSuccessInfoScreen = function VerificationSuccessInfoScr
                           : 'ToolJet.'
                       }`}
                     </div>
-                    {(configs?.google?.enabled || configs?.git?.enabled || configs?.azure?.enabled) &&
+                    {(configs?.google?.enabled || configs?.git?.enabled || configs?.cdf_azure?.enabled) &&
                       source !== 'sso' && (
                         <div className="d-flex flex-column align-items-center separator-bottom">
                           {configs?.google?.enabled && (
@@ -189,11 +189,11 @@ export const VerificationSuccessInfoScreen = function VerificationSuccessInfoScr
                               />
                             </div>
                           )}
-                          {configs?.azure?.enabled && (
+                          {configs?.cdf_azure?.enabled && (
                             <div className="login-sso-wrapper">
                               <AzureSSOLoginButton
                                 text={t('confirmationPage.signupWithAzure', 'Sign up with Azure')}
-                                configs={configs?.azure?.configs}
+                                configs={configs?.cdf_azure?.configs}
                               />
                             </div>
                           )}

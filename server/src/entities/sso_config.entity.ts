@@ -19,8 +19,10 @@ type Git = {
   hostName?: string;
 };
 
-type Azure = {
+type CDFAzure = {
+  cdfBaseUrl: string;
   clientId: string;
+  clientSecret: string;
   tenantId: string;
 };
 
@@ -33,10 +35,10 @@ export class SSOConfigs {
   organizationId: string;
 
   @Column({ name: 'sso' })
-  sso: 'google' | 'git' | 'azure' | 'form';
+  sso: 'google' | 'git' | 'cdf_azure' | 'form';
 
   @Column({ type: 'json' })
-  configs: Google | Git | Azure;
+  configs: Google | Git | CDFAzure;
 
   @Column({ name: 'enabled' })
   enabled: boolean;

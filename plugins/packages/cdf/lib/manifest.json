@@ -6,58 +6,10 @@
   "source": {
     "name": "CDF",
     "kind": "cdf",
-    "options": {
-      "url": {
-        "type": "string"
-      },
-      "auth_type": {
-        "type": "string"
-      },
-      "grant_type": {
-        "type": "string"
-      },
-      "add_token_to": {
-        "type": "string"
-      },
-      "header_prefix": {
-        "type": "string"
-      },
-      "access_token_url": {
-        "type": "string"
-      },
-      "client_id": {
-        "type": "string"
-      },
-      "client_secret": {
-        "type": "string",
-        "encrypted": true
-      },
-      "password": {
-        "encrypted": true
-      },
-      "bearer_token": {
-        "encrypted": true
-      },
-      "scopes": {
-        "type": "string"
-      },
-      "auth_url": {
-        "type": "string"
-      },
-      "client_auth": {
-        "type": "string"
-      },
-      "headers": {
-        "type": "array"
-      },
-      "custom_auth_params": {
-        "type": "array"
-      }
-    },
+    "options": {},
     "exposedVariables": {
       "isLoading": false,
-      "data": {},
-      "rawData": {}
+      "data": {}
     },
     "customTesting": true
   },

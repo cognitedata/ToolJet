@@ -47,6 +47,7 @@ interface UserCsvRow {
   email: string;
   groups?: any;
 }
+
 @Injectable()
 export class OrganizationsService {
   constructor(
@@ -115,11 +116,13 @@ export class OrganizationsService {
           host_name: this.configService.get<string>('SSO_GIT_OAUTH2_HOST'),
         },
       },
-      azure: {
-        enabled: !!this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+      cdf_azure: {
+        enabled: !!this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_ID'),
         configs: {
-          client_id: this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
-          tenant_id: this.configService.get<string>('SSO_AZURE_OAUTH2_TENANT_ID'),
+          cdfBaseUrl: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CDF_BASE_URL'),
+          client_id: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_ID'),
+          client_secret: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_SECRET'),
+          tenant_id: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_TENANT_ID'),
         },
       },
       form: {
@@ -354,7 +357,6 @@ export class OrganizationsService {
     if (!result) return;
 
     if (addInstanceLevelSSO && result.inheritSSO) {
-      console.log('foo sso');
       if (
         this.configService.get<string>('SSO_GOOGLE_OAUTH2_CLIENT_ID') &&
         !result.ssoConfigs?.some((config) => config.sso === 'google')
@@ -362,7 +364,6 @@ export class OrganizationsService {
         if (!result.ssoConfigs) {
           result.ssoConfigs = [];
         }
-        console.log('foo google');
         result.ssoConfigs.push({
           sso: 'google',
           enabled: true,
@@ -393,19 +394,20 @@ export class OrganizationsService {
         });
       }
       if (
-        this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID') &&
-        !result.ssoConfigs?.some((config) => config.sso === 'azure')
+        this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_ID') &&
+        !result.ssoConfigs?.some((config) => config.sso === 'cdf_azure')
       ) {
-        console.log('foo azure');
         if (!result.ssoConfigs) {
           result.ssoConfigs = [];
         }
         result.ssoConfigs.push({
-          sso: 'azure',
+          sso: 'cdf_azure',
           enabled: true,
           configs: {
-            clientId: this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
-            tenantId: this.configService.get<string>('SSO_AZURE_OAUTH2_TENANT_ID'),
+            cdfBaseUrl: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CDF_BASE_URL'),
+            clientId: this.configService.get<string>('SSO_CFD_AZURE_OAUTH2_CLIENT_ID'),
+            clientSecret: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_SECRET'),
+            tenantId: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_TENANT_ID'),
           },
         });
       }
@@ -496,7 +498,7 @@ export class OrganizationsService {
   async updateOrganizationConfigs(organizationId: string, params: any) {
     const { type, configs, enabled } = params;
 
-    if (!(type && ['git', 'google', 'azure', 'form'].includes(type))) {
+    if (!(type && ['git', 'google', 'cdf_azure', 'form'].includes(type))) {
       throw new BadRequestException();
     }
 
