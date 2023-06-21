@@ -13,24 +13,13 @@
     },
     "customTesting": true
   },
-  "defaults": {
-    "url": {
-      "value": "https://api.cognitedata.com/"
-    }
-  },
   "properties": {
     "project": {
       "label": "CDF project",
       "key": "project",
       "type": "text",
       "description": "CDF project name"
-    },
-    "url": {
-      "label": "Base URL",
-      "key": "url",
-      "type": "text",
-      "description": "Base cluster URL"
     }
   },
-  "required": ["project", "url"]
+  "required": ["project"]
 }

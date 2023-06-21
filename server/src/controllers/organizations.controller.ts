@@ -83,8 +83,6 @@ export class OrganizationsController {
     }
     if (!organizationId) {
       const result = this.organizationsService.constructSSOConfigs();
-      console.log('foo result');
-      console.log(result);
       return decamelizeKeys({ ssoConfigs: result });
     }
 

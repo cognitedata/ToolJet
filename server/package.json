@@ -34,7 +34,6 @@
     "typeorm:data": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js --config data-migration-config.ts"
   },
   "dependencies": {
-    "@azure/msal-node": "^1.17.3",
     "@casl/ability": "^5.3.1",
     "@nestjs/common": "^8.0.0",
     "@nestjs/config": "^1.0.0",
@@ -67,11 +66,14 @@
     "helmet": "^4.6.0",
     "humps": "^2.0.1",
     "joi": "^17.4.1",
+    "jose": "^4.14.4",
     "js-base64": "^3.7.2",
+    "jsonwebtoken": "^9.0.0",
     "jszip": "^3.10.1",
     "lodash": "^4.17.21",
     "module-from-string": "^3.3.0",
     "nestjs-pino": "^1.4.0",
+    "node-jose": "^2.2.0",
     "nodemailer": "^6.6.3",
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",

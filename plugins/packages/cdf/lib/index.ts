@@ -114,7 +114,7 @@ export default class CDFQueryService implements QueryService {
     return Promise.resolve(
       new CogniteClient({
         project: sourceOptions.project,
-        baseUrl: sourceOptions.url,
+        baseUrl: '',
         appId: 'tooljet-app',
         getToken: () => {
           return Promise.resolve('');

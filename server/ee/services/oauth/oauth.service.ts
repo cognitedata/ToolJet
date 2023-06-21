@@ -151,7 +151,7 @@ export class OauthService {
     response: Response,
     ssoResponse: SSOResponse,
     configId?: string,
-    ssoType?: 'google' | 'git',
+    ssoType?: 'google' | 'git' | 'cdf_azure',
     user?: User
   ): Promise<any> {
     const { organizationId } = ssoResponse;

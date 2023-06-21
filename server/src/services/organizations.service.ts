@@ -101,7 +101,6 @@ export class OrganizationsService {
   }
 
   constructSSOConfigs() {
-    console.log('foo azure 1');
     return {
       google: {
         enabled: !!this.configService.get<string>('SSO_GOOGLE_OAUTH2_CLIENT_ID'),

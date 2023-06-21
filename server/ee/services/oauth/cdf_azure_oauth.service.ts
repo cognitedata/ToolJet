@@ -1,48 +1,31 @@
 import { Injectable } from '@nestjs/common';
-import { AuthenticationResult, PublicClientApplication } from '@azure/msal-node';
 import UserResponse from './models/user_response';
+import got from 'got';
 
 @Injectable()
 export class CDFAzureOAuthService {
-  #publicClientApplication: PublicClientApplication;
+  constructor() {}
 
-  constructor() {
-    // Initializing PublicClientApplication with empty configuration, real values are set on signIn
-    this.#publicClientApplication = new PublicClientApplication({
-      auth: {
-        clientId: '',
-        clientSecret: '',
-        authority: '',
-      },
-    });
-  }
-
-  #extractDetailsFromPayload(idTokenClaims: any): UserResponse {
-    const email = idTokenClaims.emails[0];
-    const userSSOId = idTokenClaims.oid;
-
-    const firstName = idTokenClaims.given_name;
-    const lastName = idTokenClaims.family_name;
+  #extractDetailsFromPayload(payload: any): UserResponse {
+    const email = payload.email;
+    const userSSOId = payload.oid;
+    const [firstName, lastName] = payload.name.split(' ');
 
     return { userSSOId, firstName, lastName, email, sso: 'cdf_azure' };
   }
 
   async signIn(token: string, configs: any): Promise<UserResponse> {
-    console.log('Signing in!!!');
-    this.#publicClientApplication = new PublicClientApplication({
-      auth: {
-        clientId: configs.clientId,
-        clientSecret: configs.clientSecret,
-        authority: `https://login.microsoftonline.com/${configs.tenantId}`,
-      },
-    });
+    console.log(`Signing in!!! ${token}`);
+    try {
+      const jose = require('jose');
+      const JWKS = jose.createRemoteJWKSet(
+        new URL(`https://login.microsoftonline.com/${configs.tenantId}/discovery/v2.0/keys`)
+      );
+      const payload = await jose.jwtVerify(token, JWKS);
 
-    const response: AuthenticationResult = await this.#publicClientApplication.acquireTokenByCode({
-      code: token,
-      scopes: ['openid', 'profile', `${configs.cdfBaseUrl}/user_impersonation`],
-      redirectUri: configs.redirectUri,
-    });
-
-    return this.#extractDetailsFromPayload(response.idTokenClaims);
+      return this.#extractDetailsFromPayload(payload.payload);
+    } catch (error) {
+      throw new Error('Token verification failed: ' + error);
+    }
   }
 }
