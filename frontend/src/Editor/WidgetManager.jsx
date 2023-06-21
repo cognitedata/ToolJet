@@ -87,7 +87,7 @@ export const WidgetManager = function WidgetManager({
     const otherSection = { title: t('widgetManager.others', 'others'), items: [] };
     const allWidgets = [];
 
-    const commonItems = ['Table', 'Chart', 'Button', 'Text', 'Datepicker'];
+    const commonItems = ['Table', 'Chart', 'Button', 'Text', 'Datepicker', 'EChart'];
     const formItems = [
       'TextInput',
       'NumberInput',

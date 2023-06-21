@@ -3,6 +3,7 @@ import cx from 'classnames';
 import { componentTypes } from '../WidgetManager/components';
 import { Table } from './Components/Table/Table.jsx';
 import { Chart } from './Components/Chart';
+import { EChart } from './Components/EChart';
 import { Form } from './Components/Form';
 import { renderElement } from './Utils';
 import { toast } from 'react-hot-toast';
@@ -487,13 +488,16 @@ const handleRenderingConditionalStyles = (
 };
 
 const GetAccordion = React.memo(
-  ({ componentName, ...restProps }) => {
+  ({ componentName, darkMode, ...restProps }) => {
     switch (componentName) {
       case 'Table':
         return <Table {...restProps} />;
 
       case 'Chart':
         return <Chart {...restProps} />;
+
+      case 'EChart':
+        return <EChart darkMode={darkMode} {...restProps} />;
 
       case 'FilePicker':
         return <FilePicker {...restProps} />;

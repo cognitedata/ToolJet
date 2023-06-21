@@ -790,6 +790,203 @@ export const widgets = [
       },
     },
   },
+
+  {
+    name: 'EChart',
+    displayName: 'EChart',
+    description: 'Display charts using ECharts library',
+    component: 'EChart',
+    defaultSize: {
+      width: 20,
+      height: 400,
+    },
+    others: {
+      showOnDesktop: { type: 'toggle', displayName: 'Show on desktop' },
+      showOnMobile: { type: 'toggle', displayName: 'Show on mobile' },
+    },
+    properties: {
+      title: {
+        type: 'code',
+        displayName: 'Title',
+        validation: {
+          schema: {
+            type: 'string',
+          },
+        },
+      },
+      data: {
+        type: 'json',
+        displayName: 'Data',
+        validation: {
+          schema: { type: 'union', schemas: [{ type: 'string' }, { type: 'array' }] },
+        },
+      },
+      loadingState: {
+        type: 'toggle',
+        displayName: 'Loading State',
+        validation: {
+          schema: { type: 'boolean' },
+        },
+      },
+      showAxes: {
+        type: 'toggle',
+        displayName: 'Show axes',
+        validation: {
+          schema: {
+            type: 'boolean',
+          },
+        },
+      },
+      showGridLines: {
+        type: 'toggle',
+        displayName: 'Show grid lines',
+        validation: {
+          schema: {
+            type: 'boolean',
+          },
+        },
+      },
+      type: {
+        type: 'select',
+        displayName: 'Chart type',
+        options: [
+          { name: 'Line', value: 'line' },
+          { name: 'Bar', value: 'bar' },
+          { name: 'Gauge', value: 'gauge' },
+        ],
+        validation: {
+          schema: {
+            type: 'union',
+            schemas: [{ type: 'string' }, { type: 'boolean' }, { type: 'number' }],
+          },
+        },
+      },
+      jsonDescription: {
+        type: 'json',
+        displayName: 'Json Description',
+        validation: {
+          schema: {
+            type: 'string',
+          },
+        },
+      },
+      plotFromJson: {
+        type: 'toggle',
+        displayName: 'Use ECharts JSON schema',
+        validation: {
+          schema: {
+            type: 'boolean',
+          },
+        },
+      },
+    },
+    events: {},
+    styles: {
+      visibility: {
+        type: 'toggle',
+        displayName: 'Visibility',
+        validation: {
+          schema: {
+            type: 'boolean',
+          },
+        },
+      },
+      disabledState: {
+        type: 'toggle',
+        displayName: 'Disable',
+        validation: {
+          schema: {
+            type: 'boolean',
+          },
+        },
+      },
+    },
+    exposedVariables: {
+      show: null,
+    },
+    definition: {
+      others: {
+        showOnDesktop: { value: '{{true}}' },
+        showOnMobile: { value: '{{false}}' },
+      },
+      properties: {
+        title: { value: 'This title can be changed' },
+        showAxes: { value: '{{true}}' },
+        showGridLines: { value: '{{true}}' },
+        plotFromJson: { value: '{{false}}' },
+        loadingState: { value: `{{false}}` },
+        jsonDescription: {
+          value: `{
+            "series": [
+              {
+                "type": "gauge",
+                "progress": {
+                  "show": true,
+                  "width": 18
+                },
+                "axisLine": {
+                  "lineStyle": {
+                    "width": 18
+                  }
+                },
+                "axisTick": {
+                  "show": false
+                },
+                "splitLine": {
+                  "length": 15,
+                  "lineStyle": {
+                    "width": 2,
+                    "color": "#999"
+                  }
+                },
+                "axisLabel": {
+                  "distance": 25,
+                  "color": "#999",
+                  "fontSize": 20
+                },
+                "anchor": {
+                  "show": true,
+                  "showAbove": true,
+                  "size": 25,
+                  "itemStyle": {
+                    "borderWidth": 10
+                  }
+                },
+                "title": {
+                  "show": false
+                },
+                "detail": {
+                  "valueAnimation": true,
+                  "fontSize": 80,
+                  "offsetCenter": [0, "70%"]
+                },
+                "data": [
+                  {
+                    "value": 70
+                  }
+                ]
+              }
+            ]
+          }
+          `,
+        },
+        type: { value: `line` },
+        data: {
+          value: `[
+            { "x": "Jan", "y": 100},
+            { "x": "Feb", "y": 80},
+            { "x": "Mar", "y": 40}
+          ]`,
+        },
+      },
+      events: [],
+      styles: {
+        padding: { value: '50' },
+        visibility: { value: '{{true}}' },
+        disabledState: { value: '{{false}}' },
+      },
+    },
+  },
   {
     name: 'Modal',
     displayName: 'Modal',
