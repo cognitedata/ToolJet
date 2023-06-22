@@ -50,6 +50,7 @@ export const authenticationService = {
   authorize,
   validateSession,
   getUserDetails,
+  acquireCDFAccessToken,
 };
 
 function login(email, password, organizationId) {
@@ -295,4 +296,26 @@ function authorize() {
     credentials: 'include',
   };
   return fetch(`${config.apiUrl}/authorize`, requestOptions).then(handleResponseWithoutValidation);
+}
+
+function acquireCDFAccessToken(code, organizationId, configId) {
+  const requestOptions = {
+    method: 'POST',
+    headers: authHeader(),
+    credentials: 'include',
+    body: JSON.stringify({ code, organizationId }),
+  };
+
+  const url = configId ? `/${configId}` : ``;
+  console.log(`ready to ship ${requestOptions.body} + ${configId} to ${config.apiUrl}/oauth/token/acquire${url}`);
+  return fetch(`${config.apiUrl}/oauth/token/acquire${url}`, requestOptions)
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(`got data from the backend ${data}`);
+      localStorage.setItem('access_token', data.access_token);
+    })
+    .catch((error) => {
+      console.error('Access token retrieval error:', error);
+      throw error;
+    });
 }

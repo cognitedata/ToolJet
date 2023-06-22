@@ -34,13 +34,13 @@
       ]
     },
     "retrieve_time_series": {
-    "query": {
-      "label": "Query",
-      "key": "query",
-      "type": "codehinter",
-      "description": "Enter query",
-      "height": "150px"
-    }
+      "query": {
+        "label": "Query",
+        "key": "query",
+        "type": "codehinter",
+        "description": "Enter query",
+        "height": "150px"
+      }
     },
     "retrieve_events": {
       "query": {
@@ -69,8 +69,7 @@
         "height": "150px"
       }
     },
-    "retrieve_raw_table":{
-
+    "retrieve_raw_table": {
       "db_name": {
         "label": "Database Name",
         "key": "db_name",

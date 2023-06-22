@@ -31,4 +31,21 @@ export class OauthController {
     const result = await this.oauthService.signIn(response, body, null, ssoType, user);
     return result;
   }
+
+  @UseGuards(OrganizationAuthGuard)
+  @Post('token/acquire')
+  async acquireTokens(@Body() body, @User() user, @Res({ passthrough: true }) response: Response) {
+    return await this.oauthService.acquireCDFCompatibleToken(response, body, null, user);
+  }
+
+  @UseGuards(OrganizationAuthGuard)
+  @Post('token/acquire/:configId')
+  async acquireTokensFor(
+    @Param('configId') configId,
+    @Body() body,
+    @User() user,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return await this.oauthService.acquireCDFCompatibleToken(response, body, configId, user);
+  }
 }

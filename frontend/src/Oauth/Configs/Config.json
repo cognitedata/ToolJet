@@ -17,7 +17,8 @@
     "name": "CDF Azure",
     "responseType": "hash",
     "params": {
-      "token": "id_token"
+      "token": "id_token",
+      "code": "code"
     }
   }
 }

@@ -85,9 +85,6 @@ export function CDFAzure({ settings, updateData }) {
     );
   };
 
-  console.log(settings);
-  console.log(clientSecret);
-
   return (
     <div className="sso-card-wrapper">
       <div className="card-header">

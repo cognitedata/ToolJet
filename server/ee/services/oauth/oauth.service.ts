@@ -24,6 +24,7 @@ import { GoogleOAuthService } from './google_oauth.service';
 import { CDFAzureOAuthService } from './cdf_azure_oauth.service';
 import UserResponse from './models/user_response';
 import { Response } from 'express';
+import got from 'got';
 
 @Injectable()
 export class OauthService {
@@ -359,10 +360,83 @@ export class OauthService {
       );
     });
   }
+
+  async acquireCDFCompatibleToken(response: Response, request: TokenRequest, configId?: string, user?: User) {
+    const { code, organizationId } = request;
+    let ssoConfigs: DeepPartial<SSOConfigs>;
+    let organization: DeepPartial<Organization>;
+    const isInstanceSSOLogin = !!(!configId && !organizationId);
+    const isInstanceSSOOrganizationLogin = !!(!configId && organizationId);
+    if (configId) {
+      // SSO under an organization
+      ssoConfigs = await this.organizationService.getConfigs(configId);
+      organization = ssoConfigs?.organization;
+    } else if (isInstanceSSOOrganizationLogin) {
+      // Instance SSO login from organization login page
+      organization = await this.organizationService.fetchOrganizationDetails(organizationId, [true], false, true);
+      ssoConfigs = organization?.ssoConfigs?.find((conf) => conf.sso === 'cdf_azure');
+    } else if (isInstanceSSOLogin) {
+      // Instance SSO login from common login page
+      ssoConfigs = this.#getInstanceSSOConfigs('cdf_azure');
+      organization = ssoConfigs?.organization;
+    } else {
+      throw new UnauthorizedException();
+    }
+    const { sso, configs } = ssoConfigs;
+    let access_token: string;
+    switch (sso) {
+      case 'cdf_azure':
+        access_token = await this.#fetchCDFAwareAADToken(code, configs, configId);
+        break;
+
+      default:
+        break;
+    }
+
+    return decamelizeKeys({
+      access_token: access_token,
+    });
+  }
+
+  async #fetchCDFAwareAADToken(code: string, configs: any, configId: string) {
+    try {
+      const response = await got.post<IDPTokenResponse>(
+        `https://login.microsoftonline.com/${configs.tenantId}/oauth2/v2.0/token`,
+        {
+          form: {
+            grant_type: 'authorization_code',
+            client_id: configs.clientId,
+            client_secret: configs.clientSecret,
+            redirect_uri: `${process.env.TOOLJET_HOST}/sso/cdf_azure${configId ? `/${configId}` : ''}`,
+            code: code,
+            scope: `openid profile email ${configs.cdfBaseUrl}/user_impersonation ${configs.cdfBaseUrl}/IDENTITY`,
+          },
+          responseType: 'json',
+        }
+      );
+
+      return response.body.access_token;
+    } catch (error) {
+      console.error('Token retrieval error:', error);
+      throw error;
+    }
+  }
 }
 
 interface SSOResponse {
   token: string;
+  code: string;
   state?: string;
   organizationId?: string;
+}
+
+interface TokenRequest {
+  code: string;
+  organizationId?: string;
+}
+
+interface IDPTokenResponse {
+  access_token: string;
+  refresh_token: string;
+  // Add other properties if necessary
 }

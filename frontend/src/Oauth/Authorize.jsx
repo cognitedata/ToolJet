@@ -27,6 +27,7 @@ export function Authorize() {
     const authParams = {};
 
     if (configs.responseType === 'hash') {
+      console.log(`window.location.hash: ${window.location.hash}`);
       if (!window.location.hash) {
         return setError('Login failed');
       }
@@ -35,6 +36,9 @@ export function Authorize() {
       });
       authParams.token = params[configs.params.token];
       authParams.state = params[configs.params.state];
+      if (router.query.origin === 'cdf_azure') {
+        authParams.code = params[configs.params.code];
+      }
     } else {
       authParams.token = router.query[configs.params.token];
       authParams.state = router.query[configs.params.state];
@@ -50,6 +54,11 @@ export function Authorize() {
       });
     } else {
       signIn(authParams, configs);
+    }
+
+    if (authParams.code) {
+      console.log('I have the code!!!!');
+      authenticationService.acquireCDFAccessToken(authParams.code, organizationId, router.query.configId);
     }
 
     () => subsciption && subsciption.unsubscribe();

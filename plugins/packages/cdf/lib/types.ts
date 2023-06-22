@@ -1,6 +1,6 @@
 export type SourceOptions = {
   project: string;
-  url: string;
+  token: string;
 };
 
 export type QueryOptions = {

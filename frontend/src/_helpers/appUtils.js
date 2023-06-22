@@ -832,7 +832,14 @@ export function previewQuery(_ref, query, editorState, calledFromQuery = false) 
     } else if (query.kind === 'runpy') {
       queryExecutionPromise = executeRunPycode(_ref, query.options.code, query, editorState, true, 'edit');
     } else {
-      queryExecutionPromise = dataqueryService.preview(query, options, editorState?.state?.editingVersion?.id);
+      queryExecutionPromise = dataqueryService.preview(
+        query,
+        {
+          token: localStorage.getItem('access_token'),
+          ...options,
+        },
+        editorState?.state?.editingVersion?.id
+      );
     }
 
     queryExecutionPromise
@@ -971,7 +978,10 @@ export function runQuery(_ref, queryId, queryName, confirmed = undefined, mode =
           _self.state.currentState
         );
       } else {
-        queryExecutionPromise = dataqueryService.run(queryId, options);
+        queryExecutionPromise = dataqueryService.run(queryId, {
+          token: localStorage.getItem('access_token'),
+          ...options,
+        });
       }
 
       queryExecutionPromise
