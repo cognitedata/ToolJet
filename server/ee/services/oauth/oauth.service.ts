@@ -383,21 +383,56 @@ export class OauthService {
       throw new UnauthorizedException();
     }
     const { sso, configs } = ssoConfigs;
-    let access_token: string;
+    let credentials: any;
     switch (sso) {
       case 'cdf_azure':
-        access_token = await this.#fetchCDFAwareAADToken(code, configs, configId);
+        credentials = await this.#fetchCDFAwareAADToken(code, configs, configId);
+        console.log(`!!!!!!! ${credentials.access_token}, ${credentials.refresh_token}, ${credentials.expiration}`);
         break;
 
       default:
         break;
     }
 
-    return decamelizeKeys({
-      access_token: access_token,
-    });
+    return decamelizeKeys(credentials);
   }
 
+  async refreshCDFCompatibleToken(response: Response, request: TokenRequest, configId?: string, user?: User) {
+    const { refresh_token, organizationId } = request;
+    let ssoConfigs: DeepPartial<SSOConfigs>;
+    let organization: DeepPartial<Organization>;
+    const isInstanceSSOLogin = !!(!configId && !organizationId);
+    const isInstanceSSOOrganizationLogin = !!(!configId && organizationId);
+    if (configId) {
+      // SSO under an organization
+      ssoConfigs = await this.organizationService.getConfigs(configId);
+      organization = ssoConfigs?.organization;
+    } else if (isInstanceSSOOrganizationLogin) {
+      // Instance SSO login from organization login page
+      console.log(`#### ${organizationId}`);
+      organization = await this.organizationService.fetchOrganizationDetails(organizationId, [true], false, true);
+      ssoConfigs = organization?.ssoConfigs?.find((conf) => conf.sso === 'cdf_azure');
+    } else if (isInstanceSSOLogin) {
+      // Instance SSO login from common login page
+      ssoConfigs = this.#getInstanceSSOConfigs('cdf_azure');
+      organization = ssoConfigs?.organization;
+    } else {
+      throw new UnauthorizedException();
+    }
+    const { sso, configs } = ssoConfigs;
+    let credentials: any;
+    switch (sso) {
+      case 'cdf_azure':
+        credentials = await this.#refreshCDFAwareAADToken(refresh_token, configs, configId);
+        console.log(`!!!!!!! ${credentials.access_token}, ${credentials.refresh_token}, ${credentials.expiration}`);
+        break;
+
+      default:
+        break;
+    }
+
+    return decamelizeKeys(credentials);
+  }
   async #fetchCDFAwareAADToken(code: string, configs: any, configId: string) {
     try {
       const response = await got.post<IDPTokenResponse>(
@@ -409,13 +444,45 @@ export class OauthService {
             client_secret: configs.clientSecret,
             redirect_uri: `${process.env.TOOLJET_HOST}/sso/cdf_azure${configId ? `/${configId}` : ''}`,
             code: code,
-            scope: `openid profile email ${configs.cdfBaseUrl}/user_impersonation ${configs.cdfBaseUrl}/IDENTITY`,
+            scope: `openid profile email offline_access ${configs.cdfBaseUrl}/user_impersonation ${configs.cdfBaseUrl}/IDENTITY`,
           },
           responseType: 'json',
         }
       );
 
-      return response.body.access_token;
+      return {
+        access_token: response.body.access_token,
+        refresh_token: response.body.refresh_token,
+        expiration: Date.now() + response.body.expires_in * 1000,
+      };
+    } catch (error) {
+      console.error('Token retrieval error:', error);
+      throw error;
+    }
+  }
+
+  async #refreshCDFAwareAADToken(refresh_token: string, configs: any, configId: string) {
+    try {
+      const response = await got.post<IDPTokenResponse>(
+        `https://login.microsoftonline.com/${configs.tenantId}/oauth2/v2.0/token`,
+        {
+          form: {
+            grant_type: 'refresh_token',
+            client_id: configs.clientId,
+            client_secret: configs.clientSecret,
+            redirect_uri: `${process.env.TOOLJET_HOST}/sso/cdf_azure${configId ? `/${configId}` : ''}`,
+            refresh_token: refresh_token,
+            scope: `openid profile email offline_access ${configs.cdfBaseUrl}/user_impersonation ${configs.cdfBaseUrl}/IDENTITY`,
+          },
+          responseType: 'json',
+        }
+      );
+
+      return {
+        access_token: response.body.access_token,
+        refresh_token: response.body.refresh_token,
+        expiration: Date.now() + response.body.expires_in * 1000,
+      };
     } catch (error) {
       console.error('Token retrieval error:', error);
       throw error;
@@ -431,12 +498,14 @@ interface SSOResponse {
 }
 
 interface TokenRequest {
-  code: string;
+  code?: string;
+  refresh_token?: string;
   organizationId?: string;
 }
 
 interface IDPTokenResponse {
   access_token: string;
   refresh_token: string;
+  expires_in: number;
   // Add other properties if necessary
 }

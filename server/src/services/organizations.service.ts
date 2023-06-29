@@ -468,13 +468,15 @@ export class OrganizationsService {
   private async decryptSecret(configs) {
     if (!configs || typeof configs !== 'object') return configs;
     await Promise.all(
-      Object.keys(configs).map(async (key) => {
-        if (key.toLowerCase().includes('secret')) {
-          if (configs[key]) {
-            configs[key] = await this.encryptionService.decryptColumnValue('ssoConfigs', key, configs[key]);
+      Object.keys(configs).map(
+        async function (key) {
+          if (key.toLowerCase().includes('secret')) {
+            if (configs[key]) {
+              configs[key] = await this.encryptionService.decryptColumnValue('ssoConfigs', key, configs[key]);
+            }
           }
-        }
-      })
+        }.bind(this)
+      )
     );
   }
 

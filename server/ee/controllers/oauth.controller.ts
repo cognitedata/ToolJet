@@ -48,4 +48,20 @@ export class OauthController {
   ) {
     return await this.oauthService.acquireCDFCompatibleToken(response, body, configId, user);
   }
+  @UseGuards(OrganizationAuthGuard)
+  @Post('token/refresh')
+  async refreshTokens(@Body() body, @User() user, @Res({ passthrough: true }) response: Response) {
+    return await this.oauthService.refreshCDFCompatibleToken(response, body, null, user);
+  }
+
+  @UseGuards(OrganizationAuthGuard)
+  @Post('token/refresh/:configId')
+  async refreshTokensFor(
+    @Param('configId') configId,
+    @Body() body,
+    @User() user,
+    @Res({ passthrough: true }) response: Response
+  ) {
+    return await this.oauthService.refreshCDFCompatibleToken(response, body, configId, user);
+  }
 }

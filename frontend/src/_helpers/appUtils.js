@@ -835,7 +835,7 @@ export function previewQuery(_ref, query, editorState, calledFromQuery = false) 
       queryExecutionPromise = dataqueryService.preview(
         query,
         {
-          token: localStorage.getItem('access_token'),
+          token: authenticationService.retrieveCDFAccessToken(undefined),
           ...options,
         },
         editorState?.state?.editingVersion?.id
@@ -979,7 +979,7 @@ export function runQuery(_ref, queryId, queryName, confirmed = undefined, mode =
         );
       } else {
         queryExecutionPromise = dataqueryService.run(queryId, {
-          token: localStorage.getItem('access_token'),
+          token: authenticationService.retrieveCDFAccessToken(undefined),
           ...options,
         });
       }

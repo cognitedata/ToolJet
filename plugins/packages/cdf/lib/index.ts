@@ -14,32 +14,23 @@ export default class CDFQueryService implements QueryService {
   ): Promise<QueryResult> {
     const client = await this.getClient(sourceOptions);
     const rawDataArray = await client.datapoints.retrieve({
-      items: [{ externalId: 'RPFCC370:oee', start: 'ago-5d', end: 'now' }],
+      items: [{ externalId: 'RPFCC370:oee', start: '5d-ago', end: 'now' }],
       limit: 300,
       aggregates: ['average'],
       granularity: '1h',
     });
     const data = rawDataArray.map((rawData, index) => {
-      const timestamps = rawData.datapoints.map((point) => new Date(point.timestamp));
-      const values = rawData.datapoints.map((point) => point.average);
-      return {
-        x: timestamps,
-        y: values,
-        type: 'scatter',
-        mode: 'lines+markers',
-        name: `Series ${index + 1}`, // you may want to use a more meaningful name
-        line: {
-          color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // random color, replace with a fixed color or a color selection logic if needed
-        },
-        marker: {
-          color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // random color, replace with a fixed color or a color selection logic if needed
-        },
-      };
+      return rawData.datapoints.map((point) => {
+        return {
+          x: new Date(point.timestamp),
+          y: point.average,
+        };
+      });
     });
 
     return {
       status: 'ok',
-      data: data,
+      data: data[0],
     };
   }
 
