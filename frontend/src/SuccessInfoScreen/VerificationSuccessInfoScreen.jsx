@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import EnterIcon from '../../assets/images/onboardingassets/Icons/Enter';
 import GoogleSSOLoginButton from '@ee/components/LoginPage/GoogleSSOLoginButton';
 import GitSSOLoginButton from '@ee/components/LoginPage/GitSSOLoginButton';
+import AzureSSOLoginButton from '@ee/components/LoginPage/AzureSSOLoginButton';
 import OnBoardingForm from '../OnBoardingForm/OnBoardingForm';
 import { authenticationService } from '@/_services';
 import { useLocation, useParams } from 'react-router-dom';
@@ -168,35 +169,43 @@ export const VerificationSuccessInfoScreen = function VerificationSuccessInfoScr
                           : 'ToolJet.'
                       }`}
                     </div>
-                    {(configs?.google?.enabled || configs?.git?.enabled) && source !== 'sso' && (
-                      <div className="d-flex flex-column align-items-center separator-bottom">
-                        {configs?.google?.enabled && (
-                          <div className="login-sso-wrapper">
-                            <GoogleSSOLoginButton
-                              text={t('confirmationPage.signupWithGoogle', 'Sign up with Google')}
-                              configs={configs?.google?.configs}
-                              configId={configs?.google?.config_id}
-                            />
-                          </div>
-                        )}
-                        {configs?.git?.enabled && (
-                          <div className="login-sso-wrapper">
-                            <GitSSOLoginButton
-                              text={t('confirmationPage.signupWithGitHub', 'Sign up with GitHub')}
-                              configs={configs?.git?.configs}
-                            />
-                          </div>
-                        )}
-                        <div className="separator-onboarding " style={{ width: '100%' }}>
-                          <div className="mt-2 separator" data-cy="onboarding-separator">
-                            <h2>
-                              <span>{t('confirmationPage.or', 'OR')}</span>
-                            </h2>
+                    {(configs?.google?.enabled || configs?.git?.enabled || configs?.cdf_azure?.enabled) &&
+                      source !== 'sso' && (
+                        <div className="d-flex flex-column align-items-center separator-bottom">
+                          {configs?.google?.enabled && (
+                            <div className="login-sso-wrapper">
+                              <GoogleSSOLoginButton
+                                text={t('confirmationPage.signupWithGoogle', 'Sign up with Google')}
+                                configs={configs?.google?.configs}
+                                configId={configs?.google?.config_id}
+                              />
+                            </div>
+                          )}
+                          {configs?.git?.enabled && (
+                            <div className="login-sso-wrapper">
+                              <GitSSOLoginButton
+                                text={t('confirmationPage.signupWithGitHub', 'Sign up with GitHub')}
+                                configs={configs?.git?.configs}
+                              />
+                            </div>
+                          )}
+                          {configs?.cdf_azure?.enabled && (
+                            <div className="login-sso-wrapper">
+                              <AzureSSOLoginButton
+                                text={t('confirmationPage.signupWithAzure', 'Sign up with Azure')}
+                                configs={configs?.cdf_azure?.configs}
+                              />
+                            </div>
+                          )}
+                          <div className="separator-onboarding " style={{ width: '100%' }}>
+                            <div className="mt-2 separator" data-cy="onboarding-separator">
+                              <h2>
+                                <span>{t('confirmationPage.or', 'OR')}</span>
+                              </h2>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-
+                      )}
                     <div className="org-page-inputs-wrapper">
                       <label className="tj-text-input-label" data-cy="name-input-label">
                         {t('verificationSuccessPage.name', 'Name')}

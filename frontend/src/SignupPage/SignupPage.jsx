@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { validateEmail } from '../_helpers/utils';
 import GoogleSSOLoginButton from '@ee/components/LoginPage/GoogleSSOLoginButton';
 import GitSSOLoginButton from '@ee/components/LoginPage/GitSSOLoginButton';
+import AzureSSOLoginButton from '@ee/components/LoginPage/AzureSSOLoginButton';
 import { SignupInfoScreen } from '@/SuccessInfoScreen';
 import OnboardingNavbar from '@/_components/OnboardingNavbar';
 import { ButtonSolid } from '@/_components/AppButton';
@@ -126,10 +127,10 @@ class SignupPageComponent extends React.Component {
                       (!this.state.configs?.form?.enable_sign_up &&
                         this.state.configs?.enable_sign_up &&
                         !this.state.configs?.git?.enabled &&
-                        !this.state.configs?.google?.enabled)) && (
+                        !this.state.configs?.google?.enabled &&
+                        !this.state.configs?.cdf_azure?.enabled)) && (
                       <SignupStatusCard text={'Signup has been disabled by your workspace admin.'} />
                     )}
-
                     {this.state.configs?.enable_sign_up && (
                       <div>
                         {this.state.configs?.git?.enabled && (
@@ -149,7 +150,18 @@ class SignupPageComponent extends React.Component {
                             />
                           </div>
                         )}
-                        {(this.state.configs?.git?.enabled || this.state.configs?.google?.enabled) &&
+                        {this.state.configs?.cdf_azure?.enabled && (
+                          <div className="login-sso-wrapper">
+                            <AzureSSOLoginButton
+                              configs={this.state.configs?.cdf_azure?.configs}
+                              configId={this.state.configs?.cdf_azure?.config_id}
+                              text={this.props.t('confirmationPage.signupWithAzure', 'Sign up with Azure')}
+                            />
+                          </div>
+                        )}
+                        {(this.state.configs?.git?.enabled ||
+                          this.state.configs?.google?.enabled ||
+                          this.state.configs?.cdf_azure?.enabled) &&
                           this.isFormSignUpEnabled() && (
                             <div className="separator-signup">
                               <div className="mt-2 separator" data-cy="onboarding-separator">

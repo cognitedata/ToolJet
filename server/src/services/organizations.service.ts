@@ -47,6 +47,7 @@ interface UserCsvRow {
   email: string;
   groups?: any;
 }
+
 @Injectable()
 export class OrganizationsService {
   constructor(
@@ -112,6 +113,15 @@ export class OrganizationsService {
         configs: {
           client_id: this.configService.get<string>('SSO_GIT_OAUTH2_CLIENT_ID'),
           host_name: this.configService.get<string>('SSO_GIT_OAUTH2_HOST'),
+        },
+      },
+      cdf_azure: {
+        enabled: !!this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_ID'),
+        configs: {
+          cdfBaseUrl: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CDF_BASE_URL'),
+          client_id: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_ID'),
+          client_secret: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_SECRET'),
+          tenant_id: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_TENANT_ID'),
         },
       },
       form: {
@@ -382,6 +392,24 @@ export class OrganizationsService {
           },
         });
       }
+      if (
+        this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_ID') &&
+        !result.ssoConfigs?.some((config) => config.sso === 'cdf_azure')
+      ) {
+        if (!result.ssoConfigs) {
+          result.ssoConfigs = [];
+        }
+        result.ssoConfigs.push({
+          sso: 'cdf_azure',
+          enabled: true,
+          configs: {
+            cdfBaseUrl: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CDF_BASE_URL'),
+            clientId: this.configService.get<string>('SSO_CFD_AZURE_OAUTH2_CLIENT_ID'),
+            clientSecret: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_SECRET'),
+            tenantId: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_TENANT_ID'),
+          },
+        });
+      }
     }
 
     if (!isHideSensitiveData) {
@@ -440,13 +468,15 @@ export class OrganizationsService {
   private async decryptSecret(configs) {
     if (!configs || typeof configs !== 'object') return configs;
     await Promise.all(
-      Object.keys(configs).map(async (key) => {
-        if (key.toLowerCase().includes('secret')) {
-          if (configs[key]) {
-            configs[key] = await this.encryptionService.decryptColumnValue('ssoConfigs', key, configs[key]);
+      Object.keys(configs).map(
+        async function (key) {
+          if (key.toLowerCase().includes('secret')) {
+            if (configs[key]) {
+              configs[key] = await this.encryptionService.decryptColumnValue('ssoConfigs', key, configs[key]);
+            }
           }
-        }
-      })
+        }.bind(this)
+      )
     );
   }
 
@@ -469,7 +499,7 @@ export class OrganizationsService {
   async updateOrganizationConfigs(organizationId: string, params: any) {
     const { type, configs, enabled } = params;
 
-    if (!(type && ['git', 'google', 'form'].includes(type))) {
+    if (!(type && ['git', 'google', 'cdf_azure', 'form'].includes(type))) {
       throw new BadRequestException();
     }
 

@@ -89,5 +89,5 @@ export enum WORKSPACE_USER_STATUS {
   ARCHIVED = 'archived',
 }
 
-type source = 'google' | 'git' | 'signup' | 'invite';
+type source = 'google' | 'git' | 'cdf_azure' | 'signup' | 'invite';
 type status = 'invited' | 'verified' | 'active' | 'archived';

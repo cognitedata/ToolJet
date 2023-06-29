@@ -12,5 +12,13 @@
     "params": {
       "token": "id_token"
     }
+  },
+  "cdf_azure": {
+    "name": "CDF Azure",
+    "responseType": "hash",
+    "params": {
+      "token": "id_token",
+      "code": "code"
+    }
   }
 }

@@ -12,11 +12,20 @@ import { Organization } from './organization.entity';
 type Google = {
   clientId: string;
 };
+
 type Git = {
   clientId: string;
   clientSecret: string;
   hostName?: string;
 };
+
+type CDFAzure = {
+  cdfBaseUrl: string;
+  clientId: string;
+  clientSecret: string;
+  tenantId: string;
+};
+
 @Entity({ name: 'sso_configs' })
 export class SSOConfigs {
   @PrimaryGeneratedColumn('uuid')
@@ -26,10 +35,10 @@ export class SSOConfigs {
   organizationId: string;
 
   @Column({ name: 'sso' })
-  sso: 'google' | 'git' | 'form';
+  sso: 'google' | 'git' | 'cdf_azure' | 'form';
 
   @Column({ type: 'json' })
-  configs: Google | Git;
+  configs: Google | Git | CDFAzure;
 
   @Column({ name: 'enabled' })
   enabled: boolean;

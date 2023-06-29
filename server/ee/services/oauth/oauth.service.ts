@@ -21,8 +21,10 @@ import { dbTransactionWrap } from 'src/helpers/utils.helper';
 import { DeepPartial, EntityManager } from 'typeorm';
 import { GitOAuthService } from './git_oauth.service';
 import { GoogleOAuthService } from './google_oauth.service';
+import { CDFAzureOAuthService } from './cdf_azure_oauth.service';
 import UserResponse from './models/user_response';
 import { Response } from 'express';
+import got from 'got';
 
 @Injectable()
 export class OauthService {
@@ -33,6 +35,7 @@ export class OauthService {
     private readonly organizationUsersService: OrganizationUsersService,
     private readonly googleOAuthService: GoogleOAuthService,
     private readonly gitOAuthService: GitOAuthService,
+    private readonly azureOAuthService: CDFAzureOAuthService,
     private configService: ConfigService
   ) {}
 
@@ -103,7 +106,7 @@ export class OauthService {
     return user;
   }
 
-  #getSSOConfigs(ssoType: 'google' | 'git'): Partial<SSOConfigs> {
+  #getSSOConfigs(ssoType: 'google' | 'git' | 'cdf_azure'): Partial<SSOConfigs> {
     switch (ssoType) {
       case 'google':
         return {
@@ -119,12 +122,22 @@ export class OauthService {
             hostName: this.configService.get<string>('SSO_GIT_OAUTH2_HOST'),
           },
         };
+      case 'cdf_azure':
+        return {
+          enabled: !!this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_ID'),
+          configs: {
+            cdfBaseUrl: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CDF_BASE_URL'),
+            clientId: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_ID'),
+            clientSecret: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_CLIENT_SECRET'),
+            tenantId: this.configService.get<string>('SSO_CDF_AZURE_OAUTH2_TENANT_ID'),
+          },
+        };
       default:
         return;
     }
   }
 
-  #getInstanceSSOConfigs(ssoType: 'google' | 'git'): DeepPartial<SSOConfigs> {
+  #getInstanceSSOConfigs(ssoType: 'google' | 'git' | 'cdf_azure'): DeepPartial<SSOConfigs> {
     return {
       organization: {
         enableSignUp: this.configService.get<string>('SSO_DISABLE_SIGNUPS') !== 'true',
@@ -139,7 +152,7 @@ export class OauthService {
     response: Response,
     ssoResponse: SSOResponse,
     configId?: string,
-    ssoType?: 'google' | 'git',
+    ssoType?: 'google' | 'git' | 'cdf_azure',
     user?: User
   ): Promise<any> {
     const { organizationId } = ssoResponse;
@@ -185,6 +198,10 @@ export class OauthService {
 
       case 'git':
         userResponse = await this.gitOAuthService.signIn(token, configs);
+        break;
+
+      case 'cdf_azure':
+        userResponse = await this.azureOAuthService.signIn(token, configs);
         break;
 
       default:
@@ -343,10 +360,152 @@ export class OauthService {
       );
     });
   }
+
+  async acquireCDFCompatibleToken(response: Response, request: TokenRequest, configId?: string, user?: User) {
+    const { code, organizationId } = request;
+    let ssoConfigs: DeepPartial<SSOConfigs>;
+    let organization: DeepPartial<Organization>;
+    const isInstanceSSOLogin = !!(!configId && !organizationId);
+    const isInstanceSSOOrganizationLogin = !!(!configId && organizationId);
+    if (configId) {
+      // SSO under an organization
+      ssoConfigs = await this.organizationService.getConfigs(configId);
+      organization = ssoConfigs?.organization;
+    } else if (isInstanceSSOOrganizationLogin) {
+      // Instance SSO login from organization login page
+      organization = await this.organizationService.fetchOrganizationDetails(organizationId, [true], false, true);
+      ssoConfigs = organization?.ssoConfigs?.find((conf) => conf.sso === 'cdf_azure');
+    } else if (isInstanceSSOLogin) {
+      // Instance SSO login from common login page
+      ssoConfigs = this.#getInstanceSSOConfigs('cdf_azure');
+      organization = ssoConfigs?.organization;
+    } else {
+      throw new UnauthorizedException();
+    }
+    const { sso, configs } = ssoConfigs;
+    let credentials: any;
+    switch (sso) {
+      case 'cdf_azure':
+        credentials = await this.#fetchCDFAwareAADToken(code, configs, configId);
+        console.log(`!!!!!!! ${credentials.access_token}, ${credentials.refresh_token}, ${credentials.expiration}`);
+        break;
+
+      default:
+        break;
+    }
+
+    return decamelizeKeys(credentials);
+  }
+
+  async refreshCDFCompatibleToken(response: Response, request: TokenRequest, configId?: string, user?: User) {
+    const { refresh_token, organizationId } = request;
+    let ssoConfigs: DeepPartial<SSOConfigs>;
+    let organization: DeepPartial<Organization>;
+    const isInstanceSSOLogin = !!(!configId && !organizationId);
+    const isInstanceSSOOrganizationLogin = !!(!configId && organizationId);
+    if (configId) {
+      // SSO under an organization
+      ssoConfigs = await this.organizationService.getConfigs(configId);
+      organization = ssoConfigs?.organization;
+    } else if (isInstanceSSOOrganizationLogin) {
+      // Instance SSO login from organization login page
+      console.log(`#### ${organizationId}`);
+      organization = await this.organizationService.fetchOrganizationDetails(organizationId, [true], false, true);
+      ssoConfigs = organization?.ssoConfigs?.find((conf) => conf.sso === 'cdf_azure');
+    } else if (isInstanceSSOLogin) {
+      // Instance SSO login from common login page
+      ssoConfigs = this.#getInstanceSSOConfigs('cdf_azure');
+      organization = ssoConfigs?.organization;
+    } else {
+      throw new UnauthorizedException();
+    }
+    const { sso, configs } = ssoConfigs;
+    let credentials: any;
+    switch (sso) {
+      case 'cdf_azure':
+        credentials = await this.#refreshCDFAwareAADToken(refresh_token, configs, configId);
+        console.log(`!!!!!!! ${credentials.access_token}, ${credentials.refresh_token}, ${credentials.expiration}`);
+        break;
+
+      default:
+        break;
+    }
+
+    return decamelizeKeys(credentials);
+  }
+  async #fetchCDFAwareAADToken(code: string, configs: any, configId: string) {
+    try {
+      const response = await got.post<IDPTokenResponse>(
+        `https://login.microsoftonline.com/${configs.tenantId}/oauth2/v2.0/token`,
+        {
+          form: {
+            grant_type: 'authorization_code',
+            client_id: configs.clientId,
+            client_secret: configs.clientSecret,
+            redirect_uri: `${process.env.TOOLJET_HOST}/sso/cdf_azure${configId ? `/${configId}` : ''}`,
+            code: code,
+            scope: `openid profile email offline_access ${configs.cdfBaseUrl}/user_impersonation ${configs.cdfBaseUrl}/IDENTITY`,
+          },
+          responseType: 'json',
+        }
+      );
+
+      return {
+        access_token: response.body.access_token,
+        refresh_token: response.body.refresh_token,
+        expiration: Date.now() + response.body.expires_in * 1000,
+      };
+    } catch (error) {
+      console.error('Token retrieval error:', error);
+      throw error;
+    }
+  }
+
+  async #refreshCDFAwareAADToken(refresh_token: string, configs: any, configId: string) {
+    try {
+      const response = await got.post<IDPTokenResponse>(
+        `https://login.microsoftonline.com/${configs.tenantId}/oauth2/v2.0/token`,
+        {
+          form: {
+            grant_type: 'refresh_token',
+            client_id: configs.clientId,
+            client_secret: configs.clientSecret,
+            redirect_uri: `${process.env.TOOLJET_HOST}/sso/cdf_azure${configId ? `/${configId}` : ''}`,
+            refresh_token: refresh_token,
+            scope: `openid profile email offline_access ${configs.cdfBaseUrl}/user_impersonation ${configs.cdfBaseUrl}/IDENTITY`,
+          },
+          responseType: 'json',
+        }
+      );
+
+      return {
+        access_token: response.body.access_token,
+        refresh_token: response.body.refresh_token,
+        expiration: Date.now() + response.body.expires_in * 1000,
+      };
+    } catch (error) {
+      console.error('Token retrieval error:', error);
+      throw error;
+    }
+  }
 }
 
 interface SSOResponse {
   token: string;
+  code: string;
   state?: string;
   organizationId?: string;
+}
+
+interface TokenRequest {
+  code?: string;
+  refresh_token?: string;
+  organizationId?: string;
+}
+
+interface IDPTokenResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  // Add other properties if necessary
 }

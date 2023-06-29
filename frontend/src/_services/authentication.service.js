@@ -50,6 +50,8 @@ export const authenticationService = {
   authorize,
   validateSession,
   getUserDetails,
+  acquireCDFAccessToken,
+  retrieveCDFAccessToken,
 };
 
 function login(email, password, organizationId) {
@@ -59,6 +61,9 @@ function login(email, password, organizationId) {
     body: JSON.stringify({ email, password }),
     credentials: 'include',
   };
+
+  console.log(email, password, organizationId);
+  console.log(requestOptions);
 
   return fetch(`${config.apiUrl}/authenticate${organizationId ? `/${organizationId}` : ''}`, requestOptions)
     .then(handleResponseWithoutValidation)
@@ -292,4 +297,84 @@ function authorize() {
     credentials: 'include',
   };
   return fetch(`${config.apiUrl}/authorize`, requestOptions).then(handleResponseWithoutValidation);
+}
+
+function acquireCDFAccessToken(code, organizationId, configId) {
+  console.log('getting authentication token');
+  const requestOptions = {
+    method: 'POST',
+    headers: authHeader(),
+    credentials: 'include',
+    body: JSON.stringify({ code, organizationId }),
+  };
+
+  const url = configId ? `/${configId}` : ``;
+  return fetch(`${config.apiUrl}/oauth/token/acquire${url}`, requestOptions)
+    .then((response) => response.json())
+    .then((data) => {
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      localStorage.setItem('token_expiration_date', data.expiration.toString());
+    })
+    .catch((error) => {
+      console.error('Access token retrieval error:', error);
+      throw error;
+    });
+}
+
+function refreshCDFAccessToken(refresh_token, configId) {
+  console.log('getting authentication token');
+  const organization_id = currentSessionSubject.value?.current_organization_id;
+  const requestOptions = {
+    method: 'POST',
+    headers: authHeader(),
+    credentials: 'include',
+    body: JSON.stringify({ refresh_token, organizationId: organization_id }),
+  };
+
+  const url = configId ? `/${configId}` : ``;
+  fetch(`${config.apiUrl}/oauth/token/refresh${url}`, requestOptions)
+    .then((response) => response.json())
+    .then((data) => {
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      localStorage.setItem('token_expiration_date', data.expiration.toString());
+    })
+    .catch((error) => {
+      console.error('Access token retrieval error:', error);
+      throw error;
+    });
+}
+
+function checkCDFAccessTokenValidity() {
+  const accessToken = localStorage.getItem('access_token');
+  const expirationTime = localStorage.getItem('token_expiration_date');
+
+  if (!accessToken || !expirationTime) {
+    return false; // Access token or expiration time is missing
+  }
+
+  const now = Date.now();
+  const expiresAt = parseInt(expirationTime, 10);
+
+  if (now >= expiresAt) {
+    return false; // Access token has expired
+  }
+
+  return true; // Access token is valid
+}
+
+function retrieveCDFAccessToken(configId) {
+  if (!checkCDFAccessTokenValidity()) {
+    // Access token has expired or not available, refresh it
+    const refreshToken = localStorage.getItem('refresh_token');
+
+    if (refreshToken) {
+      refreshCDFAccessToken(refreshToken, configId);
+    } else {
+      // Refresh token is missing, need to acquire a new access token
+      console.error('Refresh token was not found...');
+    }
+  }
+  return localStorage.getItem('access_token');
 }

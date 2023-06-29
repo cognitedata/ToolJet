@@ -70,5 +70,6 @@ function editOrganizationConfigs(params) {
     credentials: 'include',
     body: JSON.stringify(params),
   };
+  console.log(requestOptions);
   return fetch(`${config.apiUrl}/organizations/configs`, requestOptions).then(handleResponse);
 }
