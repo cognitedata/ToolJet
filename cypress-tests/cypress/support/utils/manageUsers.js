@@ -15,7 +15,7 @@ export const manageUsersElements = () => {
   });
   cy.get(commonSelectors.breadcrumbPageTitle).verifyVisibleElement(
     "have.text",
-    usersText.breadcrumbUsersPageTitle
+    " Users"
   );
 
   for (const element in usersSelector.usersElements) {
@@ -32,23 +32,28 @@ export const manageUsersElements = () => {
   cy.contains("td", usersText.adminUserEmail)
     .parent()
     .within(() => {
-      cy.get(usersSelector.adminUserName).verifyVisibleElement(
-        "have.text",
-        usersText.adminUserName
-      );
-      cy.get(usersSelector.adminUserEmail).verifyVisibleElement(
-        "have.text",
-        usersText.adminUserEmail
-      );
-      cy.get("td small").verifyVisibleElement(
-        "have.text",
-        usersText.activeStatus
-      );
-      cy.get("td button").verifyVisibleElement(
-        "have.text",
-        usersText.adminUserState
-      );
+      cy.get(
+        usersSelector.userName(usersText.adminUserName)
+      ).verifyVisibleElement("have.text", usersText.adminUserName);
+      cy.get(
+        usersSelector.userEmail(usersText.adminUserName)
+      ).verifyVisibleElement("have.text", usersText.adminUserEmail);
+      cy.get(
+        usersSelector.userStatus(usersText.adminUserName)
+      ).verifyVisibleElement("have.text", usersText.activeStatus);
+      cy.wait(1000);
+      cy.get('[data-cy="user-actions-button"]').click();
     });
+
+  cy.get('[data-cy="edit-user-details-button"]').verifyVisibleElement(
+    "have.text",
+    "Edit user details"
+  );
+  cy.get('[data-cy="archive-button"]').verifyVisibleElement(
+    "have.text",
+    "Archive user"
+  );
+
   cy.get(usersSelector.userFilterInput).should("be.visible");
 
   cy.get(usersSelector.buttonAddUsers)
@@ -63,6 +68,7 @@ export const manageUsersElements = () => {
     "have.text",
     usersText.buttonUploadCsvFile
   );
+
   cy.get(usersSelector.addUsersCardTitle).verifyVisibleElement(
     "have.text",
     usersText.addUsersCardTitle
@@ -70,15 +76,22 @@ export const manageUsersElements = () => {
 
   cy.get(commonSelectors.labelFullNameInput).verifyVisibleElement(
     "have.text",
-    commonText.labelFullNameInput
+    "Name"
   );
   cy.get(commonSelectors.inputFieldFullName).should("be.visible");
   cy.get(commonSelectors.labelEmailInput).verifyVisibleElement(
     "have.text",
     commonText.labelEmailInput
   );
+
   cy.get(commonSelectors.inputFieldEmailAddress).should("be.visible");
 
+  cy.get(commonSelectors.groupInputFieldLabel).verifyVisibleElement(
+    "have.text",
+    commonText.groupInputFieldLabel
+  );
+  cy.wait(1000);
+  cy.get('[data-cy="user-group-select"]').should("be.visible");
   cy.get(commonSelectors.cancelButton).verifyVisibleElement(
     "have.text",
     usersText.cancelButton
@@ -109,6 +122,15 @@ export const manageUsersElements = () => {
     "have.text",
     usersText.buttonDownloadTemplate
   );
+  cy.wait(3000)
+  cy.exec("cd ./cypress/downloads/ && rm -rf *");
+  cy.get(usersSelector.buttonDownloadTemplate).click();
+  cy.wait(4000)
+  cy.exec("ls ./cypress/downloads/").then((result) => {
+    const downloadedAppExportFileName = result.stdout.split("\n")[0];
+    expect(downloadedAppExportFileName).to.contain.string("sample_upload.csv");
+  });
+
   cy.get(usersSelector.iconBulkUpload).should("be.visible");
   cy.get(usersSelector.helperTextSelectFile).verifyVisibleElement(
     "have.text",
@@ -126,96 +148,23 @@ export const manageUsersElements = () => {
 };
 
 export const inviteUser = (firstName, email) => {
-  let invitationToken,
-    organizationToken,
-    workspaceId,
-    userId,
-    url = "";
-  cy.get(usersSelector.buttonAddUsers).click();
-  cy.clearAndType(commonSelectors.inputFieldFullName, firstName);
-  cy.clearAndType(commonSelectors.inputFieldEmailAddress, email);
-
-  cy.get(usersSelector.buttonInviteUsers).click();
-  cy.verifyToastMessage(
-    commonSelectors.toastMessage,
-    usersText.userCreatedToast
-  );
-  cy.task("updateId", {
-    dbconfig: Cypress.env("app_db"),
-    sql: `select invitation_token from users where email='${email}';`,
-  }).then((resp) => {
-    invitationToken = resp.rows[0].invitation_token;
-
-    cy.task("updateId", {
-      dbconfig: Cypress.env("app_db"),
-      sql: "select id from organizations where name='My workspace';",
-    }).then((resp) => {
-      workspaceId = resp.rows[0].id;
-
-      cy.task("updateId", {
-        dbconfig: Cypress.env("app_db"),
-        sql: `select id from users where email='${email}';`,
-      }).then((resp) => {
-        userId = resp.rows[0].id;
-
-        cy.task("updateId", {
-          dbconfig: Cypress.env("app_db"),
-          sql: `select invitation_token from organization_users where user_id='${userId}';`,
-        }).then((resp) => {
-          organizationToken = resp.rows[1].invitation_token;
-
-          url = `/invitations/${invitationToken}/workspaces/${organizationToken}?oid=${workspaceId}`;
-          common.logout();
-          cy.wait(500);
-          cy.visit(url);
-        });
-      });
-    });
-  });
+  cy.userInviteApi(firstName, email);
+  fetchAndVisitInviteLink(email);
+  cy.clearAndType(commonSelectors.passwordInputField, "password");
+  cy.get(commonSelectors.acceptInviteButton).click();
 };
 
-export const addNewUser = (firstName, email) => {
-  cy.intercept("POST", "/api/organization_users").as("appLibrary");
-  cy.clearAndType(commonSelectors.inputFieldFullName, firstName);
-  cy.clearAndType(commonSelectors.inputFieldEmailAddress, email);
+export const confirmInviteElements = (email) => {
 
-  cy.get(usersSelector.createUserButton).click();
-  cy.wait("@appLibrary").then((res) => {
-    const invitation1 = res.response.body.users.user.invitation_token;
-    const invitation2 = res.response.body.users.invitation_token;
-    const url = `http://localhost:8082/invitations/${invitation1}/workspaces/${invitation2}`;
-    common.logout();
-    cy.visit(url);
-  });
-};
+  cy.get(commonSelectors.SignUpSectionHeader).verifyVisibleElement(
+    "have.text", "Sign up");
+  cy.get('[data-cy="workspace-signup-header"]').verifyVisibleElement(
+    "have.text", "Sign up to the workspace - My workspace");
 
-export const confirmInviteElements = () => {
-  cy.get(commonSelectors.invitePageHeader).verifyVisibleElement(
-    "have.text",
-    commonText.invitePageHeader
-  );
-  cy.get(commonSelectors.invitePageSubHeader).verifyVisibleElement(
-    "have.text",
-    commonText.invitePageSubHeader
-  );
-  cy.get(commonSelectors.userNameInputLabel).verifyVisibleElement(
-    "have.text",
-    commonText.userNameInputLabel
-  );
-  cy.get(commonSelectors.invitedUserName).should("be.visible");
-  cy.get(commonSelectors.emailInputLabel).verifyVisibleElement(
-    "have.text",
-    commonText.emailInputLabel
-  );
-  cy.get(commonSelectors.invitedUserEmail).should("be.visible");
-  cy.get(commonSelectors.passwordLabel).verifyVisibleElement(
-    "have.text",
-    commonText.passwordLabel
-  );
-  cy.get(commonSelectors.passwordInputField).should("be.visible");
-  cy.get(commonSelectors.acceptInviteButton)
-    .verifyVisibleElement("have.text", commonText.acceptInviteButton)
-    .should("be.disabled");
+  cy.verifyLabel("Email")
+  cy.verifyLabel("Create a password")
+  cy.get(commonSelectors.invitedUserEmail).verifyVisibleElement(
+    "have.text", email);
 
   cy.get(commonSelectors.signUpTermsHelperText).should(($el) => {
     expect($el.contents().first().text().trim()).to.eq(
@@ -254,4 +203,140 @@ export const userStatus = (email) => {
     .within(() => {
       cy.get("td button").click();
     });
+};
+
+export const bulkUserUpload = (file, fileName, toastMessage) => {
+  cy.get(usersSelector.inputFieldBulkUpload).selectFile(file, {
+    force: true,
+  });
+  cy.get(usersSelector.uploadedFileData).should("contain", fileName);
+  cy.get(usersSelector.buttonUploadUsers).click();
+  cy.get(commonSelectors.newToastMessage)
+    .should("be.visible")
+    .and("have.text", toastMessage);
+  cy.get(usersSelector.toastCloseButton).click();
+
+  cy.wait(200);
+};
+
+
+export const copyInvitationLink = (firstName, email) => {
+  cy.window().then((win) => {
+    cy.stub(win, "prompt").returns(win.prompt).as("copyToClipboardPrompt");
+  });
+  common.searchUser(email);
+  cy.contains("td", email)
+    .parent()
+    .within(() => {
+      cy.get('[data-cy="copy-icon"]').click();
+    });
+  cy.verifyToastMessage(
+    commonSelectors.toastMessage,
+    usersText.inviteCopiedToast
+  );
+  cy.get("@copyToClipboardPrompt").then((prompt) => {
+    common.logout();
+    cy.visit(prompt.args[0][1]);
+  });
+};
+
+export const fillUserInviteForm = (firstName, email) => {
+  cy.get(usersSelector.buttonAddUsers).click();
+  cy.clearAndType(commonSelectors.inputFieldFullName, firstName);
+  cy.clearAndType(commonSelectors.inputFieldEmailAddress, email);
+};
+
+export const selectUserGroup = (groupName) => {
+  cy.wait(1500);
+  cy.get("body").then(($body) => {
+    const selectDropdown = $body.find('[data-cy="user-group-select"]>>>>>');
+
+    if (selectDropdown.length === 0) {
+      cy.get('[data-cy="user-group-select"]>>>>>').click();
+    }
+    cy.get('[data-cy="user-group-select"]>>>>>').eq(0).type(groupName);
+    cy.wait(1000);
+    cy.get('[data-cy="group-check-input"]').eq(0).check()
+  });
+};
+
+export const inviteUserWithUserGroups = (
+  firstName,
+  email,
+  groupName1,
+  groupName2
+) => {
+  fillUserInviteForm(firstName, email);
+
+  cy.wait(2000);
+
+  cy.get("body").then(($body) => {
+    const selectDropdown = $body.find('[data-cy="user-group-select"]>>>>>');
+
+    if (selectDropdown.length === 0) {
+      cy.get('[data-cy="user-group-select"]>>>>>').click();
+    }
+    cy.get('[data-cy="user-group-select"]>>>>>').eq(0).type(groupName1);
+    cy.wait(1000);
+    cy.get('[data-cy="group-check-input"]').eq(0).check()
+    cy.wait(1000);
+    cy.get('[data-cy="user-group-select"]>>>>>').eq(0).type(groupName2);
+    cy.wait(1000);
+    cy.get('[data-cy="group-check-input"]').eq(0).check()
+  });
+
+  cy.get(usersSelector.buttonInviteUsers).click();
+  cy.verifyToastMessage(
+    commonSelectors.toastMessage,
+    usersText.userCreatedToast
+  );
+
+  cy.wait(1000);
+  fetchAndVisitInviteLink(email);
+  cy.clearAndType(commonSelectors.passwordInputField, "password");
+  // cy.intercept('GET', '/api/organizations').as('org')
+  cy.get(commonSelectors.signUpButton).click();
+  cy.wait(2000);
+  cy.get(commonSelectors.acceptInviteButton).click();
+};
+
+export const fetchAndVisitInviteLink = (email) => {
+  let invitationToken,
+    organizationToken,
+    workspaceId,
+    userId,
+    url = "";
+
+  cy.task("updateId", {
+    dbconfig: Cypress.env("app_db"),
+    sql: `select invitation_token from users where email='${email}';`,
+  }).then((resp) => {
+    invitationToken = resp.rows[0].invitation_token;
+
+    cy.task("updateId", {
+      dbconfig: Cypress.env("app_db"),
+      sql: "select id from organizations where name='My workspace';",
+    }).then((resp) => {
+      workspaceId = resp.rows[0].id;
+
+      cy.task("updateId", {
+        dbconfig: Cypress.env("app_db"),
+        sql: `select id from users where email='${email}';`,
+      }).then((resp) => {
+        userId = resp.rows[0].id;
+
+        cy.task("updateId", {
+          dbconfig: Cypress.env("app_db"),
+          sql: `select invitation_token from organization_users where user_id='${userId}';`,
+        }).then((resp) => {
+          organizationToken = resp.rows[1].invitation_token;
+
+          url = `/invitations/${invitationToken}/workspaces/${organizationToken}?oid=${workspaceId}`;
+          cy.logoutApi();
+          cy.wait(1000);
+          cy.visit(url);
+        });
+      });
+    });
+  });
 };

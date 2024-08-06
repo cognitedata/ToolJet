@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useCallback, useEffect } from 'react';
-import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
-import { resolveReferences, resolveWidgetFieldValue } from '@/_helpers/utils';
+import { GoogleMap, LoadScript, Marker, Autocomplete, Polygon } from '@react-google-maps/api';
+import { resolveWidgetFieldValue } from '@/_helpers/utils';
 import { darkModeStyles } from './styles';
 import { useTranslation } from 'react-i18next';
 
@@ -11,53 +12,51 @@ export const Map = function Map({
   component,
   darkMode,
   onComponentClick,
-  currentState,
   onComponentOptionChanged,
   onComponentOptionsChanged,
-  onEvent,
-  // canvasWidth,
-  registerAction,
+  styles,
+  setExposedVariable,
   dataCy,
+  properties,
+  fireEvent,
 }) {
   const center = component.definition.properties.initialLocation.value;
-  const defaultMarkerValue = component.definition.properties.defaultMarkers.value;
+  const { polygonPoints = [], defaultMarkers = [] } = properties;
+
   const { t } = useTranslation();
 
-  let defaultMarkers = [];
-  try {
-    defaultMarkers = defaultMarkerValue;
-  } catch (err) {
-    console.log(err);
-  }
-
   const addNewMarkersProp = component.definition.properties.addNewMarkers;
-  const canAddNewMarkers = addNewMarkersProp ? resolveReferences(addNewMarkersProp.value, currentState) : false;
+  const canAddNewMarkers = addNewMarkersProp ? resolveWidgetFieldValue(addNewMarkersProp.value) : false;
 
   const canSearchProp = component.definition.properties.canSearch;
-  const canSearch = canSearchProp ? resolveReferences(canSearchProp.value, currentState) : false;
+  const canSearch = canSearchProp ? resolveWidgetFieldValue(canSearchProp.value) : false;
   const widgetVisibility = component.definition.styles?.visibility?.value ?? true;
   const disabledState = component.definition.styles?.disabledState?.value ?? false;
 
   const parsedDisabledState =
-    typeof disabledState !== 'boolean' ? resolveWidgetFieldValue(disabledState, currentState) : disabledState;
+    typeof disabledState !== 'boolean' ? resolveWidgetFieldValue(disabledState) : disabledState;
 
   let parsedWidgetVisibility = widgetVisibility;
 
   try {
-    parsedWidgetVisibility = resolveReferences(parsedWidgetVisibility, currentState, []);
+    parsedWidgetVisibility = resolveWidgetFieldValue(parsedWidgetVisibility);
   } catch (err) {
     console.log(err);
   }
 
   const [gmap, setGmap] = useState(null);
   const [autoComplete, setAutoComplete] = useState(null);
-  const [mapCenter, setMapCenter] = useState(resolveReferences(center, currentState));
-  const [markers, setMarkers] = useState(resolveReferences(defaultMarkers, currentState));
+  const [mapCenter, setMapCenter] = useState(() => resolveWidgetFieldValue(center));
+  const [markers, setMarkers] = useState(defaultMarkers);
 
   const containerStyle = {
     width: '100%',
     height,
   };
+
+  useEffect(() => {
+    setMarkers(defaultMarkers);
+  }, [JSON.stringify(defaultMarkers)]);
 
   function handleMapClick(e) {
     if (!canAddNewMarkers) {
@@ -71,7 +70,7 @@ export const Map = function Map({
     newMarkers.push({ lat, lng });
     setMarkers(newMarkers);
 
-    onComponentOptionChanged(component, 'markers', newMarkers).then(() => onEvent('onCreateMarker', { component }));
+    onComponentOptionChanged(component, 'markers', newMarkers).then(() => fireEvent('onCreateMarker'));
   }
 
   function addMapUrlToJson(centerJson) {
@@ -93,11 +92,11 @@ export const Map = function Map({
     onComponentOptionsChanged(component, [
       ['bounds', bounds],
       ['center', addMapUrlToJson(newCenter)],
-    ]).then(() => onEvent('onBoundsChange', { component }));
+    ]).then(() => fireEvent('onBoundsChange'));
   }
 
   useEffect(() => {
-    const resolvedCenter = resolveReferences(center, currentState);
+    const resolvedCenter = resolveWidgetFieldValue(center);
     setMapCenter(resolvedCenter);
     onComponentOptionsChanged(component, [['center', addMapUrlToJson(resolvedCenter)]]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,9 +110,7 @@ export const Map = function Map({
   });
 
   function handleMarkerClick(index) {
-    onComponentOptionChanged(component, 'selectedMarker', markers[index]).then(() =>
-      onEvent('onMarkerClick', { component })
-    );
+    onComponentOptionChanged(component, 'selectedMarker', markers[index]).then(() => fireEvent('onMarkerClick'));
   }
 
   function onPlaceChanged() {
@@ -126,18 +123,16 @@ export const Map = function Map({
     setAutoComplete(autocompleteInstance);
   }
 
-  registerAction(
-    'setLocation',
-    async function (lat, lng) {
-      if (lat && lng) setMapCenter(resolveReferences({ lat, lng }, currentState));
-    },
-    [setMapCenter]
-  );
+  useEffect(() => {
+    setExposedVariable('setLocation', async function (lat, lng) {
+      if (lat && lng) setMapCenter(resolveWidgetFieldValue({ lat, lng }));
+    });
+  }, [setMapCenter]);
 
   return (
     <div
       data-disabled={parsedDisabledState}
-      style={{ height, display: parsedWidgetVisibility ? '' : 'none' }}
+      style={{ height, display: parsedWidgetVisibility ? '' : 'none', boxShadow: styles.boxShadow }}
       onClick={(event) => {
         event.stopPropagation();
         onComponentClick(id, component, event);
@@ -184,6 +179,21 @@ export const Map = function Map({
                 <Marker key={index} position={marker} label={marker.label} onClick={() => handleMarkerClick(index)} />
               ))}
             </>
+          )}
+          {polygonPoints.length > 1 && (
+            <Polygon
+              path={polygonPoints}
+              onClick={() => {
+                fireEvent('onPolygonClick');
+              }}
+              options={{
+                strokeColor: '#4d72fa',
+                strokeOpacity: 1,
+                strokeWeight: 2,
+                fillColor: '#4d72fa',
+                fillOpacity: 0.5,
+              }}
+            />
           )}
         </GoogleMap>
       </LoadScript>

@@ -8,10 +8,11 @@ export const SelectComponent = ({
   value,
   onChange,
   closeMenuOnSelect,
-  customWrap, //used so that editor selects remains with old theme , remove when whole theme is same !
+  classNamePrefix,
+  darkMode,
   ...restProps
 }) => {
-  const darkMode = localStorage.getItem('darkMode') === 'true';
+  const isDarkMode = darkMode ?? localStorage.getItem('darkMode') === 'true';
   const {
     isMulti = false,
     styles = {},
@@ -30,18 +31,18 @@ export const SelectComponent = ({
     isDisabled = false,
   } = restProps;
 
-  const customStyles = useCustomStyles ? styles : defaultStyles(darkMode, width, height, styles);
+  const customStyles = useCustomStyles ? styles : defaultStyles(isDarkMode, width, height, styles);
   const selectOptions =
     Array.isArray(options) && options.length === 0
       ? options
-      : options.map((option) => {
+      : options?.map((option) => {
           if (!option.hasOwnProperty('label')) {
             return _.mapKeys(option, (value, key) => (key === 'value' ? key : 'label'));
           }
           return option;
         });
 
-  const currentValue = selectOptions.find((option) => option.value === value) || value;
+  const currentValue = value ? selectOptions.find((option) => option.value === value) || value : defaultValue;
 
   const handleOnChange = (data) => {
     if (isMulti) {
@@ -62,7 +63,6 @@ export const SelectComponent = ({
   return (
     <Select
       {...restProps}
-      defaultValue={defaultValue}
       isLoading={isLoading}
       isDisabled={isDisabled || isLoading}
       options={selectOptions}
@@ -76,7 +76,7 @@ export const SelectComponent = ({
       maxMenuHeight={maxMenuHeight}
       menuPortalTarget={useMenuPortal ? document.body : menuPortalTarget}
       closeMenuOnSelect={closeMenuOnSelect ?? true}
-      classNamePrefix={`${darkMode && 'dark-theme'} ${customWrap && 'react-select'}`}
+      classNamePrefix={`${isDarkMode && 'dark-theme'} ${'react-select'}`}
     />
   );
 };

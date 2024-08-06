@@ -1,9 +1,9 @@
 import React from 'react';
 import Select from '@/_ui/Select';
 import DOMPurify from 'dompurify';
-import { CodeHinter } from '../../CodeBuilder/CodeHinter';
 import { withTranslation } from 'react-i18next';
 import { queryManagerSelectComponentStyle } from '@/_ui/Select/styles';
+import CodeHinter from '@/Editor/CodeEditor';
 
 const operationColorMapping = {
   get: 'azure',
@@ -212,9 +212,9 @@ class OpenapiComponent extends React.Component {
       queryParams = this.resolveParameters('query');
       headerParams = this.resolveParameters('header');
 
-      if (selectedOperation.request_body) {
-        const requestType = Object.keys(selectedOperation.request_body.content)[0];
-        requestBody = selectedOperation.request_body.content[requestType];
+      if (selectedOperation.requestBody) {
+        const requestType = Object.keys(selectedOperation.requestBody.content)[0];
+        requestBody = selectedOperation.requestBody.content[requestType];
       }
     }
 
@@ -289,14 +289,10 @@ class OpenapiComponent extends React.Component {
                         </div>
                         <div className="col field overflow-hidden">
                           <CodeHinter
-                            currentState={this.props.currentState}
+                            type="basic"
                             initialValue={this.state.options.params.path[param.name]}
-                            mode="text"
                             placeholder={'Value'}
-                            theme={this.props.darkMode ? 'monokai' : 'duotone-light'}
-                            lineNumbers={false}
                             onChange={(value) => this.changeParam('path', param.name, value)}
-                            height={'32px'}
                           />
                         </div>
                         <span
@@ -305,8 +301,8 @@ class OpenapiComponent extends React.Component {
                           onClick={() => this.removeParam('path', param.name)}
                         >
                           <svg
-                            width="auto"
-                            height="auto"
+                            width="100%"
+                            height="100%"
                             viewBox="0 0 12 13"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
@@ -338,14 +334,11 @@ class OpenapiComponent extends React.Component {
                         </div>
                         <div className="col field overflow-hidden">
                           <CodeHinter
-                            currentState={this.props.currentState}
+                            type="basic"
                             initialValue={this.state.options.params.path[param.name]}
-                            mode="text"
                             placeholder={'Value'}
-                            theme={this.props.darkMode ? 'monokai' : 'duotone-light'}
                             lineNumbers={false}
                             onChange={(value) => this.changeParam('path', param.name, value)}
-                            height={'32px'}
                           />
                         </div>
                         <span
@@ -354,8 +347,8 @@ class OpenapiComponent extends React.Component {
                           onClick={() => this.removeParam('path', param.name)}
                         >
                           <svg
-                            width="auto"
-                            height="auto"
+                            width="100%"
+                            height="100%"
                             viewBox="0 0 12 13"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
@@ -387,14 +380,10 @@ class OpenapiComponent extends React.Component {
                         </div>
                         <div className="col field overflow-hidden">
                           <CodeHinter
-                            currentState={this.props.currentState}
+                            type="basic"
                             initialValue={this.state.options.params?.query[param.name] ?? ''}
-                            mode="text"
                             placeholder={'Value'}
-                            theme={this.props.darkMode ? 'monokai' : 'duotone-light'}
-                            lineNumbers={false}
                             onChange={(value) => this.changeParam('query', param.name, value)}
-                            height={'32px'}
                           />
                         </div>
                         <span
@@ -403,8 +392,8 @@ class OpenapiComponent extends React.Component {
                           onClick={() => this.removeParam('query', param.name)}
                         >
                           <svg
-                            width="auto"
-                            height="auto"
+                            width="100%"
+                            height="100%"
                             viewBox="0 0 12 13"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
@@ -440,14 +429,10 @@ class OpenapiComponent extends React.Component {
                         </div>
                         <div className="col field overflow-hiddel">
                           <CodeHinter
-                            currentState={this.props.currentState}
+                            type="basic"
                             initialValue={this.state.options.params?.request[param] ?? ''}
-                            mode="text"
                             placeholder={'Value'}
-                            theme={this.props.darkMode ? 'monokai' : 'duotone-light'}
-                            lineNumbers={false}
                             onChange={(value) => this.changeParam('request', param, value)}
-                            height={'32px'}
                           />
                         </div>
                         <span
@@ -456,8 +441,8 @@ class OpenapiComponent extends React.Component {
                           onClick={() => this.removeParam('request', param)}
                         >
                           <svg
-                            width="auto"
-                            height="auto"
+                            width="100%"
+                            height="100%"
                             viewBox="0 0 12 13"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"

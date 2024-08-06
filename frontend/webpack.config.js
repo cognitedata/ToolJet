@@ -5,6 +5,10 @@ const CompressionPlugin = require('compression-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 require('dotenv').config({ path: '../.env' });
 const hash = require('string-hash');
+const { sentryWebpackPlugin } = require('@sentry/webpack-plugin');
+const fs = require('fs');
+const versionPath = path.resolve(__dirname, '.version');
+const version = fs.readFileSync(versionPath, 'utf-8').trim();
 
 const environment = process.env.NODE_ENV === 'production' ? 'production' : 'development';
 
@@ -19,6 +23,38 @@ function stripTrailingSlash(str) {
   return str.replace(/[/]+$/, '');
 }
 
+const plugins = [
+  new HtmlWebpackPlugin({
+    template: './src/index.ejs',
+    favicon: './assets/images/logo.svg',
+    hash: environment === 'production',
+  }),
+  new CompressionPlugin({
+    test: /\.js(\?.*)?$/i,
+    algorithm: 'gzip',
+  }),
+  new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /(en)$/),
+  new webpack.DefinePlugin({
+    'process.env.ASSET_PATH': JSON.stringify(ASSET_PATH),
+    'process.env.SERVE_CLIENT': JSON.stringify(process.env.SERVE_CLIENT),
+  }),
+];
+
+if (process.env.APM_VENDOR === 'sentry') {
+  plugins.push(
+    // Add Sentry plugin for error and performance monitoring
+    sentryWebpackPlugin({
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      release: {
+        // The version should be same as what its when we are sending error events
+        name: `tooljet-${version}`,
+      },
+    })
+  );
+}
+
 module.exports = {
   mode: environment,
   optimization: {
@@ -29,7 +65,7 @@ module.exports = {
       new TerserPlugin({
         minify: TerserPlugin.esbuildMinify,
         terserOptions: {
-          ...(environment === 'production' && { drop: ['debugger'] }),
+          ...(environment === 'production' && { drop: ['debugger', 'console'] }),
         },
         parallel: environment === 'production',
       }),
@@ -51,9 +87,10 @@ module.exports = {
       '@': path.resolve(__dirname, 'src/'),
       '@ee': path.resolve(__dirname, 'ee/'),
       '@assets': path.resolve(__dirname, 'assets/'),
+      '@white-label': path.resolve(__dirname, 'ce/white-label'),
     },
   },
-  devtool: environment === 'development' ? 'eval-cheap-source-map' : false,
+  devtool: environment === 'development' ? 'eval-cheap-source-map' : 'hidden-source-map',
   module: {
     rules: [
       {
@@ -111,6 +148,9 @@ module.exports = {
             loader: 'css-loader',
           },
           {
+            loader: 'postcss-loader',
+          },
+          {
             loader: 'sass-loader',
           },
         ],
@@ -136,22 +176,7 @@ module.exports = {
       },
     ],
   },
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: './src/index.ejs',
-      favicon: './assets/images/logo.svg',
-      hash: environment === 'production',
-    }),
-    new CompressionPlugin({
-      test: /\.js(\?.*)?$/i,
-      algorithm: 'gzip',
-    }),
-    new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /(en)$/),
-    new webpack.DefinePlugin({
-      'process.env.ASSET_PATH': JSON.stringify(ASSET_PATH),
-      'process.env.SERVE_CLIENT': JSON.stringify(process.env.SERVE_CLIENT),
-    }),
-  ],
+  plugins,
   devServer: {
     historyApiFallback: { index: ASSET_PATH },
     static: {

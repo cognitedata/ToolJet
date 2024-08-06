@@ -7,8 +7,24 @@ import VariablesTable from './VariablesTable';
 import { withTranslation } from 'react-i18next';
 import _ from 'lodash';
 import ManageOrgVarsDrawer from './ManageOrgVarsDrawer';
-import { ButtonSolid } from '@/_ui/AppButton/AppButton';
-class ManageOrgVarsComponent extends React.Component {
+import { Alert } from '@/_ui/Alert/Alert';
+import { Button } from '@/_ui/LeftSidebar';
+import { useNavigate, useParams } from 'react-router-dom';
+import { deepClone } from '@/_helpers/utilities/utils.helpers';
+
+function useWorkspaceRouting() {
+  const navigate = useNavigate();
+  const { workspaceId } = useParams();
+  return { workspaceId, navigate };
+}
+
+function withWorkspaceRouting(WrappedComponent) {
+  return function (props) {
+    const { workspaceId, navigate } = useWorkspaceRouting();
+    return <WrappedComponent {...props} workspaceId={workspaceId} navigate={navigate} />;
+  };
+}
+class RawManageOrgVarsComponent extends React.Component {
   constructor(props) {
     super(props);
 
@@ -74,7 +90,7 @@ class ManageOrgVarsComponent extends React.Component {
     });
 
     orgEnvironmentVariableService.getVariables().then((data) => {
-      const variables = _.cloneDeep(data.variables)?.filter(({ variable_name }) => !/copilot_/.test(variable_name));
+      const variables = deepClone(data.variables)?.filter(({ variable_name }) => !/copilot_/.test(variable_name));
       this.setState({
         variables: variables,
         isLoading: false,
@@ -227,20 +243,6 @@ class ManageOrgVarsComponent extends React.Component {
     return permissions.some((p) => p[action]);
   }
 
-  canCreateVariable = () => {
-    return this.canAnyGroupPerformAction(
-      'org_environment_variable_create',
-      authenticationService.currentSessionValue.group_permissions
-    );
-  };
-
-  canUpdateVariable = () => {
-    return this.canAnyGroupPerformAction(
-      'org_environment_variable_update',
-      authenticationService.currentSessionValue.group_permissions
-    );
-  };
-
   canDeleteVariable = () => {
     return this.canAnyGroupPerformAction(
       'org_environment_variable_delete',
@@ -251,8 +253,35 @@ class ManageOrgVarsComponent extends React.Component {
     this.setState({ isManageVarDrawerOpen: val });
   };
 
+  goToOrgConstantsDashboard = () => {
+    const { workspaceId, navigate } = this.props;
+    navigate(`/${workspaceId}/workspace-constants`);
+  };
+
   render() {
     const { isLoading, addingVar, variables, isManageVarDrawerOpen } = this.state;
+
+    const renderDeprecationText =
+      variables?.length > 0 ? (
+        <div class="text-muted">
+          Workspace variables will no longer be supported after April 30, 2024. To maintain optimal performance, please
+          make the switch to Workspace constants
+        </div>
+      ) : (
+        <div className="text-muted p-3">
+          We have launched workspace constants and sunsetting workspace variables very soon. Please migrate workspace
+          variables immediately to safeguard your applications from this breaking change. Please refer to the migration
+          guide{' '}
+          <a
+            href="https://docs.tooljet.com/docs/org-management/workspaces/workspace-variables-migration"
+            target="_blank"
+            rel="noreferrer"
+          >
+            here
+          </a>
+        </div>
+      );
+
     return (
       <div className="wrapper org-variables-page animation-fade">
         <ConfirmDialog
@@ -277,20 +306,30 @@ class ManageOrgVarsComponent extends React.Component {
           <div className="container-xl">
             <div>
               <div className="row align-items-center ">
-                <div className="workspace-variable-header">
-                  {!isManageVarDrawerOpen && this.canCreateVariable() && (
-                    <ButtonSolid
-                      data-cy="add-new-variables-button"
-                      vaiant="primary"
-                      onClick={() => this.setState({ isManageVarDrawerOpen: true, errors: {} })}
-                      className="add-new-variables-button"
-                    >
-                      {this.props.t(
-                        'header.organization.menus.manageSSO.environmentVar.addNewVariable',
-                        'Add new variable'
-                      )}
-                    </ButtonSolid>
-                  )}
+                <div className="workspace-variable-header mb-3">
+                  <Alert svg="tj-info-warning" cls="workspace-variables-alert-banner" useDarkMode={false}>
+                    <div className="d-flex align-items-center">
+                      {renderDeprecationText}
+                      <div>
+                        <Button
+                          onClick={this.goToOrgConstantsDashboard}
+                          darkMode={this.props.darkMode}
+                          size="sm"
+                          styles={{
+                            width: '100%',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                          }}
+                        >
+                          <Button.Content
+                            iconSrc="assets/images/icons/arrow-right.svg"
+                            title={'Go to Workspace constants'}
+                            direction="right"
+                          />
+                        </Button>
+                      </div>
+                    </div>
+                  </Alert>
                 </div>
               </div>
             </div>
@@ -313,22 +352,14 @@ class ManageOrgVarsComponent extends React.Component {
               />
             ) : (
               <>
-                {variables?.length > 0 ? (
+                {variables?.length > 0 && (
                   <VariablesTable
                     isLoading={isLoading}
                     variables={variables}
-                    canUpdateVariable={this.canUpdateVariable()}
                     canDeleteVariable={this.canDeleteVariable()}
                     onEditBtnClicked={this.onEditBtnClicked}
                     onDeleteBtnClicked={this.onDeleteBtnClicked}
                   />
-                ) : (
-                  <span className="no-vars-text" data-cy="no-variable-text">
-                    {this.props.t(
-                      'header.organization.menus.manageSSO.environmentVar.noEnvConfig',
-                      `You haven't configured any environment variables, press the 'Add new variable' button to create one`
-                    )}
-                  </span>
                 )}
               </>
             )}
@@ -338,5 +369,7 @@ class ManageOrgVarsComponent extends React.Component {
     );
   }
 }
+
+const ManageOrgVarsComponent = withWorkspaceRouting(RawManageOrgVarsComponent);
 
 export const ManageOrgVars = withTranslation()(ManageOrgVarsComponent);

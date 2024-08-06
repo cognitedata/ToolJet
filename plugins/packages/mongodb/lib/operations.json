@@ -94,7 +94,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -106,7 +105,8 @@
         "mode": "javascript",
         "placeholder": "{ name: 'Steve', 'hobbies: [ 'hiking', 'tennis', 'fly fishing' ] }",
         "description": "Enter document",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -115,7 +115,8 @@
         "mode": "javascript",
         "placeholder": "{ checkKeys: true }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "insert_many": {
@@ -125,7 +126,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -137,7 +137,8 @@
         "mode": "javascript",
         "placeholder": "[ { _id: 1, name: 'Steve' }, { _id: 2, name: 'Sally' } ]",
         "description": "Enter document",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -146,7 +147,8 @@
         "mode": "javascript",
         "placeholder": "{ checkKeys: true }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "find_one": {
@@ -156,7 +158,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -168,7 +169,8 @@
         "mode": "javascript",
         "placeholder": "{ birth: { $lt: 'new Date({{new Date('01/01/1990').getTime()}})' } }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -177,7 +179,8 @@
         "mode": "javascript",
         "placeholder": "{ projection: { _id: 0, 'name.first': 0, birth: 1 }, sort: { birth: -1 }, limit: 10, skip: 2 }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "find_many": {
@@ -187,7 +190,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -199,7 +201,8 @@
         "mode": "javascript",
         "placeholder": "{ birth: { $lt: 'new Date({{new Date('01/01/1990').getTime()}})' } }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -208,7 +211,8 @@
         "mode": "javascript",
         "placeholder": "{ projection: { _id: 0, 'name.first': 0, birth: 1 }, sort: { birth: -1 }, limit: 10, skip: 2 }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "count_total": {
@@ -218,7 +222,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -230,7 +233,8 @@
         "mode": "javascript",
         "placeholder": "{ fullResponse: true }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "count": {
@@ -240,7 +244,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -252,7 +255,8 @@
         "mode": "javascript",
         "placeholder": "{ birth: { $lt: 'new Date({{new Date('01/01/1990').getTime()}})' } }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -261,7 +265,8 @@
         "mode": "javascript",
         "placeholder": "{ skip: 2 }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "distinct": {
@@ -271,7 +276,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -294,7 +298,8 @@
         "mode": "javascript",
         "placeholder": "{ directors: 'Barbra Streisand', }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -303,7 +308,8 @@
         "mode": "javascript",
         "placeholder": "{ comment: 'some comment' }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "update_one": {
@@ -313,7 +319,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -325,7 +330,8 @@
         "mode": "javascript",
         "placeholder": "{ directors: 'Barbra Streisand', }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "update": {
         "label": "Update",
@@ -334,7 +340,8 @@
         "mode": "javascript",
         "placeholder": "{ $set: { status: 'Modified' } }",
         "description": "Enter update",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -343,7 +350,8 @@
         "mode": "javascript",
         "placeholder": "{ comment: 'some comment' }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "update_many": {
@@ -353,7 +361,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -365,7 +372,8 @@
         "mode": "javascript",
         "placeholder": "{ directors: 'Barbra Streisand', }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "update": {
         "label": "Update",
@@ -374,7 +382,8 @@
         "mode": "javascript",
         "placeholder": "{ $set: { status: 'Modified' } }",
         "description": "Enter update",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -383,7 +392,8 @@
         "mode": "javascript",
         "placeholder": "{ comment: 'some comment' }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "replace_one": {
@@ -393,7 +403,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -405,7 +414,8 @@
         "mode": "javascript",
         "placeholder": "{ title: { $regex: 'The Cat from' } } }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "replacement": {
         "label": "Replacement",
@@ -414,7 +424,8 @@
         "mode": "javascript",
         "placeholder": "{ title: { $regex: 'The Cat from some sector' } }",
         "description": "Enter replacement",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -423,7 +434,8 @@
         "mode": "javascript",
         "placeholder": "{ comment: 'some comment' }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "find_one_replace": {
@@ -433,7 +445,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -445,7 +456,8 @@
         "mode": "javascript",
         "placeholder": "{ title: { $regex: 'The Cat from' } } }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "replacement": {
         "label": "Replacement",
@@ -454,7 +466,8 @@
         "mode": "javascript",
         "placeholder": "{ title: { $regex: 'The Cat from some sector' } }",
         "description": "Enter replacement",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -463,7 +476,8 @@
         "mode": "javascript",
         "placeholder": "{ comment: 'some comment' }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "find_one_update": {
@@ -473,7 +487,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -485,7 +498,8 @@
         "mode": "javascript",
         "placeholder": "{ directors: 'Barbra Streisand', }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "update": {
         "label": "Update",
@@ -494,7 +508,8 @@
         "mode": "javascript",
         "placeholder": "{ $set: { status: 'Modified' } }",
         "description": "Enter update",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -503,7 +518,8 @@
         "mode": "javascript",
         "placeholder": "{ upsert: true }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "find_one_delete": {
@@ -513,7 +529,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -525,7 +540,8 @@
         "mode": "javascript",
         "placeholder": "{ directors: 'Barbra Streisand', }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -534,7 +550,8 @@
         "mode": "javascript",
         "placeholder": "{ sort: { field: -1 } }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "delete_one": {
@@ -544,7 +561,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -556,7 +572,8 @@
         "mode": "javascript",
         "placeholder": "{ directors: 'Barbra Streisand', }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -565,7 +582,8 @@
         "mode": "javascript",
         "placeholder": "{  comment: 'some comment' }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "delete_many": {
@@ -575,7 +593,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -587,7 +604,8 @@
         "mode": "javascript",
         "placeholder": "{ directors: 'Barbra Streisand', }",
         "description": "Enter filter",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -596,7 +614,8 @@
         "mode": "javascript",
         "placeholder": "{ comment: 'some comment' }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "bulk_write": {
@@ -606,7 +625,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -618,7 +636,8 @@
         "mode": "javascript",
         "placeholder": "[{ insertOne: { document: { directors: 'Barbra Streisand' } } }]",
         "description": "Enter operations",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -627,7 +646,8 @@
         "mode": "javascript",
         "placeholder": "{ comment: 'some comment' }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     },
     "aggregate": {
@@ -637,7 +657,6 @@
         "type": "codehinter",
         "lineNumbers": false,
         "description": "Enter collection",
-        "width": "320px",
         "height": "36px",
         "className": "codehinter-plugins",
         "placeholder": "Enter collection"
@@ -649,7 +668,8 @@
         "mode": "javascript",
         "placeholder": "[{ $match: { categories: 'Bakery' } }, { $group: { _id: '$stars', count: { $sum: 1 } } }]",
         "description": "Enter pipeline",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       },
       "options": {
         "label": "Options",
@@ -658,7 +678,8 @@
         "mode": "javascript",
         "placeholder": "{ comment: 'some comment' }",
         "description": "Enter options",
-        "height": "150px"
+        "height": "150px",
+        "editorType": "extendedSingleLine"
       }
     }
   }

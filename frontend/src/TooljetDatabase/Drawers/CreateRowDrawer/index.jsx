@@ -1,43 +1,75 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import Drawer from '@/_ui/Drawer';
 import { toast } from 'react-hot-toast';
 import CreateRowForm from '../../Forms/RowForm';
 import { TooljetDatabaseContext } from '../../index';
 import { tooljetDatabaseService } from '@/_services';
-import SolidIcon from '@/_ui/Icon/SolidIcons';
+import { listAllPrimaryKeyColumns } from '@/TooljetDatabase/constants';
+import PostgrestQueryBuilder from '@/_helpers/postgrestQueryBuilder';
 
-const CreateRowDrawer = ({ isCreateRowDrawerOpen, setIsCreateRowDrawerOpen }) => {
-  const { organizationId, selectedTable, setSelectedTableData, setTotalRecords } = useContext(TooljetDatabaseContext);
+const CreateRowDrawer = ({
+  isCreateRowDrawerOpen,
+  setIsCreateRowDrawerOpen,
+  referencedColumnDetails,
+  setReferencedColumnDetails,
+}) => {
+  const {
+    organizationId,
+    selectedTable,
+    setSelectedTableData,
+    setTotalRecords,
+    pageSize,
+    setSortFilters,
+    setQueryFilters,
+    columns,
+  } = useContext(TooljetDatabaseContext);
+  const [shouldResetRowForm, setShouldResetRowForm] = useState(0);
 
   return (
     <>
-      <button
-        onClick={() => {
-          setIsCreateRowDrawerOpen(!isCreateRowDrawerOpen);
-        }}
-        className="tj-db-header-add-new-row-btn tj-text-xsm font-weight-500"
+      <Drawer
+        isOpen={isCreateRowDrawerOpen}
+        onClose={() => setIsCreateRowDrawerOpen(false)}
+        position="right"
+        className="tj-db-drawer"
       >
-        <SolidIcon name="row" width="14" />
-        <span data-cy="add-new-row-button-text">Add new row</span>
-      </button>
-      <Drawer isOpen={isCreateRowDrawerOpen} onClose={() => setIsCreateRowDrawerOpen(false)} position="right">
         <CreateRowForm
-          onCreate={() => {
-            tooljetDatabaseService.findOne(organizationId, selectedTable).then(({ headers, data = [], error }) => {
-              if (error) {
-                toast.error(error?.message ?? `Failed to fetch table "${selectedTable}"`);
-                return;
-              }
+          onCreate={(shouldKeepDrawerOpen) => {
+            const limit = pageSize;
+            setSortFilters({});
+            setQueryFilters({});
 
-              if (Array.isArray(data) && data?.length > 0) {
-                const totalContentRangeRecords = headers['content-range'].split('/')[1] || 0;
-                setTotalRecords(totalContentRangeRecords);
-                setSelectedTableData(data);
-              }
+            const primaryKeyColumns = listAllPrimaryKeyColumns(columns);
+            const sortQuery = new PostgrestQueryBuilder();
+            primaryKeyColumns.map((primaryKeyColumnName) => {
+              sortQuery.order(primaryKeyColumnName, 'desc');
             });
-            setIsCreateRowDrawerOpen(false);
+
+            tooljetDatabaseService
+              .findOne(organizationId, selectedTable.id, `${sortQuery.url.toString()}&limit=${limit}`)
+              .then(({ headers, data = [], error }) => {
+                if (error) {
+                  toast.error(error?.message ?? `Failed to fetch table "${selectedTable.table_name}"`);
+                  return;
+                }
+
+                if (Array.isArray(data) && data?.length > 0) {
+                  const totalContentRangeRecords = headers['content-range'].split('/')[1] || 0;
+                  setTotalRecords(totalContentRangeRecords);
+                  setSelectedTableData(data);
+                }
+              });
+
+            const tableElement = document.querySelector('.tj-db-table');
+            if (tableElement) tableElement.scrollTop = 0;
+            if (!shouldKeepDrawerOpen) setIsCreateRowDrawerOpen(false);
+            setShouldResetRowForm((prev) => prev + 1);
           }}
           onClose={() => setIsCreateRowDrawerOpen(false)}
+          referencedColumnDetails={referencedColumnDetails}
+          setReferencedColumnDetails={setReferencedColumnDetails}
+          initiator="CreateRowForm"
+          shouldResetRowForm={shouldResetRowForm}
         />
       </Drawer>
     </>

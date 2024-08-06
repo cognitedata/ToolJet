@@ -1,4 +1,7 @@
 import { QueryError } from './query.error';
+import { Headers } from 'got';
+import * as tls from 'tls';
+import { readFileSync } from 'fs';
 
 const CACHED_CONNECTIONS: any = {};
 
@@ -52,6 +55,16 @@ function clearData(data, keys) {
   }
 }
 
+export function isEmpty(value: number | null | undefined | string) {
+  return (
+    value === undefined ||
+    value === null ||
+    !isNaN(value as number) ||
+    (typeof value === 'object' && Object.keys(value).length === 0) ||
+    (typeof value === 'string' && value.trim().length === 0)
+  );
+}
+
 export const getCurrentToken = (isMultiAuthEnabled: boolean, tokenData: any, userId: string, isAppPublic: boolean) => {
   if (isMultiAuthEnabled) {
     if (!tokenData || !Array.isArray(tokenData)) return null;
@@ -63,4 +76,59 @@ export const getCurrentToken = (isMultiAuthEnabled: boolean, tokenData: any, use
   } else {
     return tokenData;
   }
+};
+
+export const sanitizeHeaders = (sourceOptions: any, queryOptions: any, hasDataSource = true): Headers => {
+  const _headers = (queryOptions.headers || []).filter((o) => {
+    return o.some((e) => !isEmpty(e));
+  });
+
+  if (!hasDataSource) return Object.fromEntries(_headers);
+
+  const headerData = _headers.concat(sourceOptions.headers || []);
+  const headers = Object.fromEntries(headerData);
+  Object.keys(headers).forEach((key) => (headers[key] === '' ? delete headers[key] : {}));
+
+  return headers;
+};
+
+export const sanitizeCookies = (sourceOptions: any, queryOptions: any, hasDataSource = true): object => {
+  const _cookies = (queryOptions.cookies || []).filter((o) => {
+    return o.some((e) => !isEmpty(e));
+  });
+
+  if (!hasDataSource) return Object.fromEntries(_cookies);
+
+  const cookieData = _cookies.concat(sourceOptions.cookies || []);
+  const cookies = Object.fromEntries(cookieData);
+  Object.keys(cookies).forEach((key) => (cookies[key] === '' ? delete cookies[key] : {}));
+
+  return cookies;
+};
+
+export const cookiesToString = (cookies: object): string => {
+  return Object.entries(cookies)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`)
+    .join('; ');
+};
+
+export const sanitizeSearchParams = (sourceOptions: any, queryOptions: any, hasDataSource = true): Array<string> => {
+  const _urlParams = (queryOptions.url_params || []).filter((o) => {
+    return o.some((e) => !isEmpty(e));
+  });
+
+  if (!hasDataSource) return _urlParams;
+
+  const urlParams = _urlParams.concat(sourceOptions.url_params || []);
+  return urlParams;
+};
+
+export const fetchHttpsCertsForCustomCA = () => {
+  if (!process.env.NODE_EXTRA_CA_CERTS) return {};
+
+  return {
+    https: {
+      certificateAuthority: [...tls.rootCertificates, readFileSync(process.env.NODE_EXTRA_CA_CERTS)].join('\n'),
+    },
+  };
 };

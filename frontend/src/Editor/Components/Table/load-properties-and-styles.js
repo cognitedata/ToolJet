@@ -1,14 +1,13 @@
+import { has } from 'lodash';
+
 export default function loadPropertiesAndStyles(properties, styles, darkMode, component) {
   const color = styles.textColor !== '#000' ? styles.textColor : darkMode && '#fff';
-
-  let serverSidePagination = properties.serverSidePagination ?? false;
-  if (typeof serverSidePagination !== 'boolean') serverSidePagination = false;
 
   const serverSideSearch = properties.serverSideSearch ?? false;
   const enableNextButton = properties.enableNextButton ?? true;
   const enablePrevButton = properties.enablePrevButton ?? true;
 
-  const totalRecords = properties.totalRecords ?? '';
+  const totalRecords = properties.totalRecords ?? 10;
   const enabledSort = properties?.enabledSort ?? true;
   const hideColumnSelectorButton = properties?.hideColumnSelectorButton ?? false;
 
@@ -28,8 +27,25 @@ export default function loadPropertiesAndStyles(properties, styles, darkMode, co
 
   const highlightSelectedRow = properties.highlightSelectedRow ?? false;
   const rowsPerPage = properties.rowsPerPage ?? 10;
-  let clientSidePagination = properties.clientSidePagination ?? !serverSidePagination;
-  if (typeof clientSidePagination !== 'boolean') clientSidePagination = true;
+
+  let serverSidePagination = properties.serverSidePagination ?? false;
+  if (typeof serverSidePagination !== 'boolean') serverSidePagination = false;
+
+  let clientSidePagination = false;
+  if (
+    properties.clientSidePagination ||
+    typeof clientSidePagination !== 'boolean' ||
+    (properties.enablePagination && !serverSidePagination)
+  ) {
+    clientSidePagination = true;
+  }
+
+  let enablePagination;
+  if (!has(properties, 'enablePagination') && (properties.clientSidePagination || properties.serverSidePagination)) {
+    enablePagination = true;
+  } else {
+    enablePagination = properties.enablePagination;
+  }
 
   const loadingState = properties.loadingState ?? false;
 
@@ -41,10 +57,10 @@ export default function loadPropertiesAndStyles(properties, styles, darkMode, co
 
   const borderRadius = styles.borderRadius ?? 0;
 
-  const widgetVisibility = styles?.visibility ?? true;
+  const widgetVisibility = properties?.visibility ?? true;
   const parsedWidgetVisibility = widgetVisibility;
 
-  const disabledState = styles?.disabledState ?? false;
+  const disabledState = properties?.disabledState ?? false;
   const parsedDisabledState = disabledState;
 
   const actionButtonRadius = styles.actionButtonRadius ? parseFloat(styles.actionButtonRadius) : 0;
@@ -57,10 +73,21 @@ export default function loadPropertiesAndStyles(properties, styles, darkMode, co
     };
   });
 
+  const showAddNewRowButton = properties?.showAddNewRowButton ?? true;
+  const allowSelection = properties?.allowSelection ?? (showBulkSelector || highlightSelectedRow) ? true : false;
+  const defaultSelectedRow = properties?.defaultSelectedRow ?? { id: 1 };
+  const maxRowHeight = styles?.maxRowHeight ?? 'auto';
+  const maxRowHeightValue = styles?.maxRowHeightValue ?? 80;
+  const boxShadow = styles?.boxShadow;
+  const selectRowOnCellEdit = properties?.selectRowOnCellEdit ?? true;
+  const contentWrapProperty = styles?.contentWrap ?? true;
+  const borderColor = styles?.borderColor ?? 'var(--borders-weak-disabled)';
+  const columnHeaderWrap = styles?.columnHeaderWrap ?? 'fixed';
+
   return {
     color,
     serverSidePagination,
-    clientSidePagination,
+    enablePagination,
     serverSideSearch,
     serverSideSort,
     serverSideFilter,
@@ -85,5 +112,15 @@ export default function loadPropertiesAndStyles(properties, styles, darkMode, co
     rowsPerPage,
     enabledSort,
     hideColumnSelectorButton,
+    defaultSelectedRow,
+    showAddNewRowButton,
+    allowSelection,
+    maxRowHeight,
+    maxRowHeightValue,
+    selectRowOnCellEdit,
+    contentWrapProperty,
+    boxShadow,
+    borderColor,
+    columnHeaderWrap,
   };
 }

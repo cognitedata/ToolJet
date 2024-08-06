@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ToolTip } from '@/Editor/Inspector/Elements/Components/ToolTip';
+import { validateKebabCase } from '@/_helpers/utils';
 
 export const EditInput = ({ slug, error, setError, pageHandle, setPageHandle, isSaving = false }) => {
   const [value, set] = useState(pageHandle);
@@ -10,7 +11,10 @@ export const EditInput = ({ slug, error, setError, pageHandle, setPageHandle, is
 
     if (newHandle === '') setError('Page handle cannot be empty');
     if (newHandle === value) setError('Page handle cannot be same as the existing page handle');
-
+    const isValidKebabCase = validateKebabCase(newHandle);
+    if (!isValidKebabCase.isValid) {
+      setError(isValidKebabCase.error);
+    }
     set(newHandle);
   };
 
@@ -37,7 +41,7 @@ export const EditInput = ({ slug, error, setError, pageHandle, setPageHandle, is
       </div>
       <input
         type="text"
-        className={`page-handler-input form-control form-control-sm ${error ? 'is-invalid' : ''}`}
+        className={`page-handler-input  form-control form-control-sm ${error ? 'is-invalid' : ''}`}
         placeholder={'Enter page handle'}
         onChange={onChangePageHandleValue}
         value={pageHandle}

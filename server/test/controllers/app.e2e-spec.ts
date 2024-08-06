@@ -89,7 +89,7 @@ describe('Authentication', () => {
         });
 
         expect(user.defaultOrganizationId).toBe(user?.organizationUsers?.[0]?.organizationId);
-        expect(organization?.name).toBe('Untitled workspace');
+        expect(organization?.name).toContain('My workspace');
 
         const groupPermissions = await user.groupPermissions;
         const groupNames = groupPermissions.map((x) => x.group);
@@ -345,7 +345,7 @@ describe('Authentication', () => {
 
         expect(response.statusCode).toBe(200);
         expect(Object.keys(response.body).sort()).toEqual(
-          ['id', 'email', 'first_name', 'last_name', 'current_organization_id'].sort()
+          ['id', 'email', 'first_name', 'last_name', 'current_organization_id', 'current_organization_slug'].sort()
         );
 
         const { email, first_name, last_name } = response.body;
@@ -374,7 +374,7 @@ describe('Authentication', () => {
 
         expect(response.statusCode).toBe(200);
         expect(Object.keys(response.body).sort()).toEqual(
-          ['id', 'email', 'first_name', 'last_name', 'current_organization_id'].sort()
+          ['id', 'email', 'first_name', 'last_name', 'current_organization_id', 'current_organization_slug'].sort()
         );
 
         const { email, first_name, last_name, current_organization_id } = response.body;

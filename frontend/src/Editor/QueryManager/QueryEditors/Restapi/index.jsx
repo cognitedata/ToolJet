@@ -1,20 +1,20 @@
-import 'codemirror/theme/duotone-light.css';
+// import 'codemirror/theme/duotone-light.css';
 
 import React from 'react';
 import { isEmpty, defaults } from 'lodash';
 import Tabs from './Tabs';
 import Select from '@/_ui/Select';
 import { changeOption } from '../utils';
-import { CodeHinter } from '../../../CodeBuilder/CodeHinter';
 import { BaseUrl } from './BaseUrl';
 import { queryManagerSelectComponentStyle } from '@/_ui/Select/styles';
+import CodeHinter from '@/Editor/CodeEditor';
 
 class Restapi extends React.Component {
   constructor(props) {
     super(props);
     const options = defaults(
       { ...props.options },
-      { headers: [], url_params: [], body: [], json_body: null, body_toggle: false }
+      { headers: [['', '']], url_params: [], body: [], json_body: null, body_toggle: false, cookies: [['', '']] }
     );
     this.state = {
       options,
@@ -26,6 +26,12 @@ class Restapi extends React.Component {
       if (isEmpty(this.state.options['headers'])) {
         this.addNewKeyValuePair('headers');
       }
+      if (isEmpty(this.state.options['cookies'])) {
+        this.addNewKeyValuePair('cookies');
+      }
+      if (isEmpty(this.state.options['method'])) {
+        changeOption(this, 'method', 'get');
+      }
       setTimeout(() => {
         if (isEmpty(this.state.options['url_params'])) {
           this.addNewKeyValuePair('url_params');
@@ -36,10 +42,29 @@ class Restapi extends React.Component {
           this.addNewKeyValuePair('body');
         }
       }, 1000);
+      setTimeout(() => {
+        this.initizalizeRetryNetworkErrorsToggle();
+      }, 1000);
     } catch (error) {
       console.log(error);
     }
   }
+
+  initizalizeRetryNetworkErrorsToggle = () => {
+    const isRetryNetworkErrorToggleUnused = this.props.options.retry_network_errors === null;
+    if (isRetryNetworkErrorToggleUnused) {
+      console.log('this.props.selectedDataSourceid: ', this.props.selectedDataSource.id);
+      const isStaticRestapi = this.props.selectedDataSource.id == 'null';
+      if (!isStaticRestapi) {
+        console.log('ToggleValue', this.props.selectedDataSource.options.retry_network_errors.value);
+      }
+      const retryNetworkErrors = isStaticRestapi
+        ? true
+        : this.props.selectedDataSource.options.retry_network_errors.value;
+
+      changeOption(this, 'retry_network_errors', retryNetworkErrors);
+    }
+  };
 
   onBodyToggleChanged = (value) => {
     const { options } = this.state;
@@ -54,7 +79,10 @@ class Restapi extends React.Component {
     const newOptions = { ...options, [option]: [...options[option], ['', '']] };
 
     this.setState({ options: newOptions }, () => {
-      this.props.optionsChanged(newOptions);
+      //these values are set to empty array so that user can type in directly without adding new entry, hence no need to pass to parent state
+      if (!['headers', 'url_params', 'body', 'cookies'].includes(option)) {
+        this.props.optionsChanged(newOptions);
+      }
     });
   };
 
@@ -88,7 +116,9 @@ class Restapi extends React.Component {
 
   handleChange = (key, keyIndex, idx) => (value) => {
     const lastPair = this.state.options[key][idx];
-    if (this.state.options[key].length - 1 === idx && (lastPair[0] || lastPair[1])) this.addNewKeyValuePair(key);
+    if (this.state.options[key].length - 1 === idx && (lastPair[0] || lastPair[1])) {
+      this.addNewKeyValuePair(key);
+    }
     this.keyValuePairValueChanged(value, keyIndex, key, idx);
   };
 
@@ -98,11 +128,11 @@ class Restapi extends React.Component {
       control: (provided) => ({
         ...provided,
         boxShadow: 'none',
-        backgroundColor: darkMode ? '#2b3547' : '#F1F3F5',
-        borderRadius: '6px 0 0 6px',
+        ...(darkMode && { backgroundColor: '#2b3547' }),
+        borderRadius: '6px',
         height: 32,
         minHeight: 32,
-        borderColor: darkMode ? 'inherit' : ' #D7DBDF',
+        borderColor: 'var(--slate7)',
         borderWidth: '1px',
         '&:hover': {
           backgroundColor: darkMode ? '' : '#F8F9FA',
@@ -114,6 +144,15 @@ class Restapi extends React.Component {
         },
         cursor: 'pointer',
       }),
+      singleValue: (provided) => ({
+        ...provided,
+        marginBottom: '3px',
+        color: darkMode ? '#fff' : '#11181C',
+      }),
+      dropdownIndicator: (provided) => ({
+        ...provided,
+        paddingTop: '4px',
+      }),
     };
   };
 
@@ -123,59 +162,60 @@ class Restapi extends React.Component {
     const queryName = this.props.queryName;
 
     const currentValue = { label: options.method?.toUpperCase(), value: options.method };
-
     return (
-      <div>
-        <div className="rest-api-methods-select-element-container">
-          <div className={`${this.props.darkMode && 'dark'}`} style={{ width: '90px', height: '32px' }}>
-            <Select
-              options={[
-                { label: 'GET', value: 'get' },
-                { label: 'POST', value: 'post' },
-                { label: 'PUT', value: 'put' },
-                { label: 'PATCH', value: 'patch' },
-                { label: 'DELETE', value: 'delete' },
-              ]}
-              onChange={(value) => {
-                changeOption(this, 'method', value);
-              }}
-              value={currentValue}
-              defaultValue={{ label: 'GET', value: 'get' }}
-              placeholder="Method"
-              width={100}
-              height={32}
-              styles={this.customSelectStyles(this.props.darkMode, 91)}
-              useCustomStyles={true}
-            />
-          </div>
-
-          <div className={`col field w-100 d-flex rest-methods-url ${this.props.darkMode && 'dark'}`}>
-            {dataSourceURL && (
-              <BaseUrl theme={this.props.darkMode ? 'monokai' : 'default'} dataSourceURL={dataSourceURL} />
-            )}
-            <div className="col">
-              <CodeHinter
-                currentState={this.props.currentState}
-                initialValue={options.url}
-                theme={this.props.darkMode ? 'monokai' : 'default'}
+      <div className={`d-flex flex-column`}>
+        {this.props.selectedDataSource?.scope == 'global' && <div className="form-label flex-shrink-0"></div>}{' '}
+        <div className="flex-grow-1 overflow-hidden">
+          <div className="rest-api-methods-select-element-container">
+            <div className={`me-2`} style={{ width: '90px', height: '32px' }}>
+              <label className="font-weight-medium color-slate12">Method</label>
+              <Select
+                options={[
+                  { label: 'GET', value: 'get' },
+                  { label: 'POST', value: 'post' },
+                  { label: 'PUT', value: 'put' },
+                  { label: 'PATCH', value: 'patch' },
+                  { label: 'DELETE', value: 'delete' },
+                ]}
                 onChange={(value) => {
-                  changeOption(this, 'url', value);
+                  changeOption(this, 'method', value);
                 }}
-                placeholder="Enter request URL"
-                componentName={`${queryName}::url`}
-                mode="javascript"
-                lineNumbers={false}
-                height={'32px'}
+                value={currentValue}
+                defaultValue={{ label: 'GET', value: 'get' }}
+                placeholder="Method"
+                width={100}
+                height={32}
+                styles={this.customSelectStyles(this.props.darkMode, 91)}
+                useCustomStyles={true}
               />
+            </div>
+
+            <div className={`field w-100 rest-methods-url`}>
+              <div className="font-weight-medium color-slate12">URL</div>
+              <div className="d-flex">
+                {dataSourceURL && (
+                  <BaseUrl theme={this.props.darkMode ? 'monokai' : 'default'} dataSourceURL={dataSourceURL} />
+                )}
+                <div className={`flex-grow-1  ${dataSourceURL ? 'url-input-group' : ''}`}>
+                  <CodeHinter
+                    type="basic"
+                    initialValue={options.url}
+                    onChange={(value) => {
+                      changeOption(this, 'url', value);
+                    }}
+                    placeholder={dataSourceURL ? 'Enter request endpoint' : 'Enter request URL'}
+                    componentName={`${queryName}::url`}
+                    lang="javascript"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
-
-        <div className={`query-pane-restapi-tabs  ${this.props.darkMode ? 'dark' : ''}`}>
+        <div className={`query-pane-restapi-tabs`}>
           <Tabs
             theme={this.props.darkMode ? 'monokai' : 'default'}
             options={this.state.options}
-            currentState={this.props.currentState}
             onChange={this.handleChange}
             onJsonBodyChange={this.handleJsonBodyChanged}
             removeKeyValuePair={this.removeKeyValuePair}

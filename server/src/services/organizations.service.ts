@@ -1,17 +1,25 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotAcceptableException } from '@nestjs/common';
 import * as csv from 'fast-csv';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GroupPermission } from 'src/entities/group_permission.entity';
 import { Organization } from 'src/entities/organization.entity';
 import { SSOConfigs } from 'src/entities/sso_config.entity';
 import { User } from 'src/entities/user.entity';
-import { cleanObject, dbTransactionWrap, isPlural } from 'src/helpers/utils.helper';
+import {
+  catchDbException,
+  cleanObject,
+  dbTransactionWrap,
+  isPlural,
+  fullName,
+  generateNextNameAndSlug,
+} from 'src/helpers/utils.helper';
 import { Brackets, createQueryBuilder, DeepPartial, EntityManager, getManager, Repository } from 'typeorm';
 import { OrganizationUser } from '../entities/organization_user.entity';
 import { EmailService } from './email.service';
 import { EncryptionService } from './encryption.service';
 import { GroupPermissionsService } from './group_permissions.service';
 import { OrganizationUsersService } from './organization_users.service';
+import { DataSourcesService } from './data_sources.service';
 import { UsersService } from './users.service';
 import { InviteNewUserDto } from '@dto/invite-new-user.dto';
 import { ConfigService } from '@nestjs/config';
@@ -25,6 +33,12 @@ import {
 import { decamelize } from 'humps';
 import { Response } from 'express';
 import { AppEnvironmentService } from './app_environments.service';
+import { DataBaseConstraints } from 'src/helpers/db_constraints.constants';
+import { OrganizationUpdateDto } from '@dto/organization.dto';
+import { DataSourceScopes, DataSourceTypes } from 'src/helpers/data_source.constants';
+import { DataSource } from 'src/entities/data_source.entity';
+import { AppEnvironment } from 'src/entities/app_environments.entity';
+import { DataSourceOptions } from 'src/entities/data_source_options.entity';
 
 const MAX_ROW_COUNT = 500;
 
@@ -47,6 +61,18 @@ interface UserCsvRow {
   email: string;
   groups?: any;
 }
+
+const orgConstraints = [
+  {
+    dbConstraint: DataBaseConstraints.WORKSPACE_NAME_UNIQUE,
+    message: 'This workspace name is already taken.',
+  },
+  {
+    dbConstraint: DataBaseConstraints.WORKSPACE_SLUG_UNIQUE,
+    message: 'This workspace slug is already taken.',
+  },
+];
+
 @Injectable()
 export class OrganizationsService {
   constructor(
@@ -55,6 +81,7 @@ export class OrganizationsService {
     @InjectRepository(SSOConfigs)
     private ssoConfigRepository: Repository<SSOConfigs>,
     private usersService: UsersService,
+    private dataSourceService: DataSourcesService,
     private organizationUserService: OrganizationUsersService,
     private groupPermissionService: GroupPermissionsService,
     private appEnvironmentService: AppEnvironmentService,
@@ -63,22 +90,25 @@ export class OrganizationsService {
     private configService: ConfigService
   ) {}
 
-  async create(name: string, user?: User, manager?: EntityManager): Promise<Organization> {
+  async create(name: string, slug: string, user: User, manager?: EntityManager): Promise<Organization> {
     let organization: Organization;
     await dbTransactionWrap(async (manager: EntityManager) => {
-      organization = await manager.save(
-        manager.create(Organization, {
-          ssoConfigs: [
-            {
-              sso: 'form',
-              enabled: true,
-            },
-          ],
-          name,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-      );
+      organization = await catchDbException(async () => {
+        return await manager.save(
+          manager.create(Organization, {
+            ssoConfigs: [
+              {
+                sso: 'form',
+                enabled: true,
+              },
+            ],
+            name,
+            slug,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+        );
+      }, orgConstraints);
 
       await this.appEnvironmentService.createDefaultEnvironments(organization.id, manager);
 
@@ -126,6 +156,24 @@ export class OrganizationsService {
     return await this.organizationsRepository.findOne({ where: { id }, relations: ['ssoConfigs'] });
   }
 
+  async fetchOrganization(slug: string, manager?: EntityManager): Promise<Organization> {
+    return dbTransactionWrap(async (manager: EntityManager) => {
+      let organization: Organization;
+      try {
+        organization = await manager.findOneOrFail(Organization, {
+          where: { slug },
+          select: ['id', 'slug', 'name'],
+        });
+      } catch (error) {
+        organization = await manager.findOneOrFail(Organization, {
+          where: { id: slug },
+          select: ['id', 'slug', 'name'],
+        });
+      }
+      return organization;
+    }, manager);
+  }
+
   async getSingleOrganization(): Promise<Organization> {
     return await this.organizationsRepository.findOne({ relations: ['ssoConfigs'] });
   }
@@ -146,6 +194,8 @@ export class OrganizationsService {
           orgEnvironmentVariableCreate: isAdmin,
           orgEnvironmentVariableUpdate: isAdmin,
           orgEnvironmentVariableDelete: isAdmin,
+          orgEnvironmentConstantCreate: isAdmin,
+          orgEnvironmentConstantDelete: isAdmin,
           folderUpdate: isAdmin,
           folderDelete: isAdmin,
         });
@@ -215,6 +265,14 @@ export class OrganizationsService {
     };
     const query = createQueryBuilder(OrganizationUser, 'organization_user')
       .innerJoinAndSelect('organization_user.user', 'user')
+      .innerJoinAndSelect(
+        'user.groupPermissions',
+        'group_permissions',
+        'group_permissions.organization_id = :organizationId',
+        {
+          organizationId: organizationId,
+        }
+      )
       .where('organization_user.organization_id = :organizationId', {
         organizationId,
       })
@@ -236,12 +294,13 @@ export class OrganizationsService {
         email: orgUser.user.email,
         firstName: orgUser.user.firstName ?? '',
         lastName: orgUser.user.lastName ?? '',
-        name: `${orgUser.user.firstName ?? ''} ${orgUser.user.lastName ?? ''}`,
+        name: fullName(orgUser.user.firstName, orgUser.user.lastName),
         id: orgUser.id,
         userId: orgUser.user.id,
         role: orgUser.role,
         status: orgUser.status,
         avatarId: orgUser.user.avatarId,
+        groups: orgUser.user.groupPermissions.map((groupPermission) => groupPermission.group),
         ...(orgUser.invitationToken ? { invitationToken: orgUser.invitationToken } : {}),
         ...(this.configService.get<string>('HIDE_ACCOUNT_SETUP_LINK') !== 'true' && orgUser.user.invitationToken
           ? { accountSetupToken: orgUser.user.invitationToken }
@@ -323,25 +382,35 @@ export class OrganizationsService {
       .getOne();
   }
 
+  constructOrgFindQuery(slug: string, id: string, statusList?: Array<boolean>) {
+    const query = createQueryBuilder(Organization, 'organization').leftJoinAndSelect(
+      'organization.ssoConfigs',
+      'organisation_sso',
+      'organisation_sso.enabled IN (:...statusList)',
+      {
+        statusList: statusList || [true, false], // Return enabled and disabled sso if status list not passed
+      }
+    );
+    if (slug) {
+      query.andWhere(`organization.slug = :slug`, { slug });
+    } else {
+      query.andWhere(`organization.id = :id`, { id });
+    }
+    return query;
+  }
+
   async fetchOrganizationDetails(
     organizationId: string,
     statusList?: Array<boolean>,
     isHideSensitiveData?: boolean,
     addInstanceLevelSSO?: boolean
   ): Promise<DeepPartial<Organization>> {
-    const result: DeepPartial<Organization> = await createQueryBuilder(Organization, 'organization')
-      .leftJoinAndSelect(
-        'organization.ssoConfigs',
-        'organisation_sso',
-        'organisation_sso.enabled IN (:...statusList)',
-        {
-          statusList: statusList || [true, false], // Return enabled and disabled sso if status list not passed
-        }
-      )
-      .andWhere('organization.id = :organizationId', {
-        organizationId,
-      })
-      .getOne();
+    let result: DeepPartial<Organization>;
+    try {
+      result = await this.constructOrgFindQuery(organizationId, null, statusList).getOneOrFail();
+    } catch (error) {
+      result = await this.constructOrgFindQuery(null, organizationId, statusList).getOne();
+    }
 
     if (!result) return;
 
@@ -393,11 +462,16 @@ export class OrganizationsService {
       }
       return result;
     }
-    return this.hideSSOSensitiveData(result?.ssoConfigs, result?.name, result?.enableSignUp);
+    return this.hideSSOSensitiveData(result?.ssoConfigs, result?.name, result?.enableSignUp, result.id);
   }
 
-  private hideSSOSensitiveData(ssoConfigs: DeepPartial<SSOConfigs>[], organizationName, enableSignUp): any {
-    const configs = { name: organizationName, enableSignUp };
+  private hideSSOSensitiveData(
+    ssoConfigs: DeepPartial<SSOConfigs>[],
+    organizationName: string,
+    enableSignUp: boolean,
+    organizationId: string
+  ): any {
+    const configs = { name: organizationName, enableSignUp, id: organizationId };
     if (ssoConfigs?.length > 0) {
       for (const config of ssoConfigs) {
         const configId = config['id'];
@@ -450,11 +524,12 @@ export class OrganizationsService {
     );
   }
 
-  async updateOrganization(organizationId: string, params) {
-    const { name, domain, enableSignUp, inheritSSO } = params;
+  async updateOrganization(organizationId: string, params: OrganizationUpdateDto) {
+    const { name, slug, domain, enableSignUp, inheritSSO } = params;
 
     const updatableParams = {
       name,
+      slug,
       domain,
       enableSignUp,
       inheritSSO,
@@ -463,7 +538,9 @@ export class OrganizationsService {
     // removing keys with undefined values
     cleanObject(updatableParams);
 
-    return await this.organizationsRepository.update(organizationId, updatableParams);
+    return await catchDbException(async () => {
+      return await this.organizationsRepository.update(organizationId, updatableParams);
+    }, orgConstraints);
   }
 
   async updateOrganizationConfigs(organizationId: string, params: any) {
@@ -530,7 +607,7 @@ export class OrganizationsService {
         shouldSendWelcomeMail = false;
 
       if (user?.organizationUsers?.some((ou) => ou.organizationId === currentUser.organizationId)) {
-        throw new BadRequestException('User with such email already exists.');
+        throw new BadRequestException('Duplicate email found. Please provide a unique email address.');
       }
 
       if (user?.invitationToken) {
@@ -546,11 +623,13 @@ export class OrganizationsService {
         // User not exist
         shouldSendWelcomeMail = true;
         // Create default organization if user not exist
-        defaultOrganization = await this.create('Untitled workspace', null, manager);
+        const { name, slug } = generateNextNameAndSlug('My workspace');
+        defaultOrganization = await this.create(name, slug, null, manager);
       } else if (user.invitationToken) {
         // User not setup
         shouldSendWelcomeMail = true;
       }
+
       user = await this.usersService.create(
         userParams,
         currentUser.organizationId,
@@ -578,15 +657,17 @@ export class OrganizationsService {
         manager
       );
 
+      const name = fullName(currentUser.firstName, currentUser.lastName);
       if (shouldSendWelcomeMail) {
         this.emailService
           .sendWelcomeEmail(
             user.email,
             user.firstName,
             user.invitationToken,
-            `${organizationUser.invitationToken}?oid=${organizationUser.organizationId}`,
+            organizationUser.invitationToken,
+            organizationUser.organizationId,
             currentOrganization.name,
-            `${currentUser.firstName} ${currentUser.lastName ?? ''}`
+            name
           )
           .catch((err) => console.error('Error while sending welcome mail', err));
       } else {
@@ -594,9 +675,10 @@ export class OrganizationsService {
           .sendOrganizationUserWelcomeEmail(
             user.email,
             user.firstName,
-            `${currentUser.firstName} ${currentUser.lastName ?? ''}`,
-            `${organizationUser.invitationToken}?oid=${organizationUser.organizationId}`,
-            currentOrganization.name
+            name,
+            organizationUser.invitationToken,
+            currentOrganization.name,
+            organizationUser.organizationId
           )
           .catch((err) => console.error('Error while sending welcome mail', err));
       }
@@ -627,7 +709,9 @@ export class OrganizationsService {
     const existingUsers = [];
     const archivedUsers = [];
     const invalidRows = [];
+    const invalidFields = new Set();
     const invalidGroups = [];
+    let isUserInOtherGroupsAndAdmin = false;
     const emailPattern = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i;
     const manager = getManager();
 
@@ -660,19 +744,39 @@ export class OrganizationsService {
           }
 
           //Check for invalid groups
-          const receivedGroups: string[] = data?.groups;
-          for (const group of receivedGroups) {
-            if (existingGroups.indexOf(group) === -1) {
-              invalidGroups.push(group);
+          const receivedGroups: string[] | null = data?.groups.length ? data?.groups : null;
+
+          if (Array.isArray(receivedGroups)) {
+            for (const group of receivedGroups) {
+              if (group === 'admin' && receivedGroups.includes('all_users') && receivedGroups.length > 2) {
+                isUserInOtherGroupsAndAdmin = true;
+                break;
+              }
+
+              if (existingGroups.indexOf(group) === -1) {
+                invalidGroups.push(group);
+              }
             }
           }
 
-          return next(null, data.first_name !== '' && data.last_name !== '' && emailPattern.test(data.email));
+          data.first_name = data.first_name?.trim();
+          data.last_name = data.last_name?.trim();
+
+          const isValidName = data.first_name !== '' || data.last_name !== '';
+
+          return next(null, isValidName && emailPattern.test(data.email) && receivedGroups?.length > 0);
         }, manager);
       })
       .on('data', function () {})
       .on('data-invalid', (row, rowNumber) => {
+        const invalidField = Object.keys(row).filter((key) => {
+          if (Array.isArray(row[key])) {
+            return row[key].length === 0;
+          }
+          return !row[key] || row[key] === '';
+        });
         invalidRows.push(rowNumber);
+        invalidFields.add(invalidField);
       })
       .on('end', async (rowCount: number) => {
         try {
@@ -681,14 +785,22 @@ export class OrganizationsService {
           }
 
           if (invalidRows.length) {
+            const invalidFieldsArray = invalidFields.entries().next().value[1];
+            const errorMsg = `Invalid row(s): [${invalidFieldsArray.join(', ')}] in [${
+              invalidRows.length
+            }] row(s). No users were uploaded.`;
+            throw new BadRequestException(errorMsg);
+          }
+
+          if (isUserInOtherGroupsAndAdmin) {
             throw new BadRequestException(
-              `Please fix row number${isPlural(invalidRows)}: ${invalidRows.join(', ')}. No users were uploaded`
+              'Conflicting Group Memberships: User cannot be in both the Admin group and other groups simultaneously.'
             );
           }
 
           if (invalidGroups.length) {
             throw new BadRequestException(
-              `Group${isPlural(invalidGroups)} ${invalidGroups.join(', ')} doesn't exist. No users were uploaded`
+              `${invalidGroups.length} group${isPlural(invalidGroups)} doesn't exist. No users were uploaded`
             );
           }
 
@@ -702,15 +814,19 @@ export class OrganizationsService {
 
           if (existingUsers.length) {
             throw new BadRequestException(
-              `User${isPlural(existingUsers)} with email ${existingUsers.join(
-                ', '
-              )} already exists. No users were uploaded`
+              `${existingUsers.length} users with same email already exist. No users were uploaded `
             );
           }
 
-          this.inviteUserswrapper(users, currentUser).catch((error) => {
-            console.error(error);
-          });
+          if (users.length === 0) {
+            throw new BadRequestException('No users were uploaded');
+          }
+
+          if (users.length > 250) {
+            throw new BadRequestException(`You can only invite 250 users at a time`);
+          }
+
+          await this.inviteUserswrapper(users, currentUser);
           res.status(201).send({ message: `${rowCount} user${isPlural(users)} are being added` });
         } catch (error) {
           const { status, response } = error;
@@ -720,5 +836,76 @@ export class OrganizationsService {
       .on('error', (error) => {
         throw error.message;
       });
+  }
+
+  async checkWorkspaceUniqueness(name: string, slug: string) {
+    if (!(slug || name)) {
+      throw new NotAcceptableException('Request should contain the slug or name');
+    }
+    const result = await getManager().findOne(Organization, {
+      ...(name && { name }),
+      ...(slug && { slug }),
+    });
+    if (result) throw new ConflictException(`${name ? 'Name' : 'Slug'} must be unique`);
+    return;
+  }
+
+  async createSampleDB(organizationId, manager: EntityManager) {
+    const config = {
+      name: 'Sample Data Source',
+      kind: 'postgresql',
+      type: DataSourceTypes.SAMPLE,
+      scope: DataSourceScopes.GLOBAL,
+      organizationId,
+    };
+    const options = [
+      {
+        key: 'host',
+        value: this.configService.get<string>('PG_HOST'),
+        encrypted: true,
+      },
+      {
+        key: 'port',
+        value: this.configService.get<string>('PG_PORT'),
+        encrypted: true,
+      },
+      {
+        key: 'database',
+        value: 'sample_db',
+      },
+      {
+        key: 'username',
+        value: this.configService.get<string>('PG_USER'),
+        encrypted: true,
+      },
+      {
+        key: 'password',
+        value: this.configService.get<string>('PG_PASS'),
+        encrypted: true,
+      },
+      {
+        key: 'ssl_enabled',
+        value: false,
+        encrypted: true,
+      },
+      { key: 'ssl_certificate', value: 'none', encrypted: false },
+    ];
+    const dataSource = manager.create(DataSource, config);
+    await manager.save(dataSource);
+
+    const allEnvs: AppEnvironment[] = await this.appEnvironmentService.getAll(organizationId, manager);
+
+    await Promise.all(
+      allEnvs?.map(async (env) => {
+        const parsedOptions = await this.dataSourceService.parseOptionsForCreate(options);
+        await manager.save(
+          manager.create(DataSourceOptions, {
+            environmentId: env.id,
+            dataSourceId: dataSource.id,
+            options: parsedOptions,
+          })
+        );
+      })
+    );
   }
 }

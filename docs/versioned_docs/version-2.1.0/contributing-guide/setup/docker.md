@@ -8,7 +8,7 @@ title: Docker
 Docker compose is the easiest way to setup ToolJet server and client locally.
 
 :::info
-If you rather want to try out ToolJet locally with docker, you can follow the steps [here](https://docs.tooljet.com/docs/setup/docker-local).
+If you rather want to try out ToolJet locally with docker, you can follow the steps [here](https://docs.tooljet.com/docs/setup/try-tooljet).
 :::
 
 ## Prerequisites
@@ -31,7 +31,7 @@ docker-compose version 1.26.2, build eefe0d31
 
 ## Setting up
 
-:::tip
+:::warning
 If you are setting up on a Windows machine, we advise you to setup Docker desktop with WSL2.
 Please find more information [here](https://docs.docker.com/desktop/windows/wsl/).
 :::
@@ -53,7 +53,7 @@ Please find more information [here](https://docs.docker.com/desktop/windows/wsl/
 
    `LOCKBOX_MASTER_KEY` requires a 32 byte key. (Run `openssl rand -hex 32` to create a 32 byte secure random key)
    :::
-   :::tip 
+   :::warning 
    If you are setting up on a Windows machine. Please make sure that .env file line endings to be LF as it will be CRLF by default unless configured for Windows machine.
    :::
    

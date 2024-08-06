@@ -1,7 +1,7 @@
 import React from 'react';
 import { renderElement } from '../Utils';
-import { CodeHinter } from '../../CodeBuilder/CodeHinter';
 import Accordion from '@/_ui/Accordion';
+import CodeHinter from '@/Editor/CodeEditor';
 
 export const CustomComponent = function CustomComponent({
   dataQueries,
@@ -10,23 +10,20 @@ export const CustomComponent = function CustomComponent({
   componentMeta,
   components,
   darkMode,
-  currentState,
   layoutPropertyChanged,
 }) {
   const code = component.component.definition.properties.code;
   const args = component.component.definition.properties.data;
-
   let items = [];
 
   items.push({
     title: 'Data',
     children: (
       <CodeHinter
-        currentState={currentState}
+        type="basic"
         initialValue={args.value ?? {}}
-        theme={darkMode ? 'monokai' : 'base16-light'}
         onChange={(value) => paramUpdated({ name: 'data' }, 'value', value, 'properties')}
-        componentName={`widget/${component.component.name}/data`}
+        componentName={`component/${component.component.name}/data`}
       />
     ),
   });
@@ -35,24 +32,23 @@ export const CustomComponent = function CustomComponent({
     title: 'Code',
     children: (
       <CodeHinter
-        currentState={currentState}
+        type="basic"
         initialValue={code.value ?? {}}
         theme={darkMode ? 'monokai' : 'base16-light'}
-        mode="jsx"
-        lineNumbers
+        lang="jsx"
+        lineNumbers={true}
         className="custom-component"
         onChange={(value) => paramUpdated({ name: 'code' }, 'value', value, 'properties')}
-        componentName={`widget/${component.component.name}/code`}
-        enablePreview={false}
+        componentName={`component/${component.component.name}/code`}
         height={400}
-        hideSuggestion
+        hideSuggestion={true}
       />
     ),
   });
 
   items.push({
-    title: 'Layout',
-    isOpen: false,
+    title: 'Devices',
+    isOpen: true,
     children: (
       <>
         {renderElement(
@@ -62,7 +58,6 @@ export const CustomComponent = function CustomComponent({
           dataQueries,
           'showOnDesktop',
           'others',
-          currentState,
           components
         )}
         {renderElement(
@@ -72,7 +67,6 @@ export const CustomComponent = function CustomComponent({
           dataQueries,
           'showOnMobile',
           'others',
-          currentState,
           components
         )}
       </>

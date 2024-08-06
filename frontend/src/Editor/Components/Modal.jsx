@@ -3,21 +3,23 @@ import { default as BootstrapModal } from 'react-bootstrap/Modal';
 import { SubCustomDragLayer } from '../SubCustomDragLayer';
 import { SubContainer } from '../SubContainer';
 import { ConfigHandle } from '../ConfigHandle';
+import { useGridStore } from '@/_stores/gridStore';
 var tinycolor = require('tinycolor2');
 
 export const Modal = function Modal({
   id,
   component,
-  height,
   containerProps,
   darkMode,
   properties,
   styles,
   exposedVariables,
   setExposedVariable,
-  registerAction,
+  setExposedVariables,
   fireEvent,
   dataCy,
+  height,
+  mode,
 }) {
   const [showModal, setShowModal] = useState(false);
   const {
@@ -28,6 +30,7 @@ export const Modal = function Modal({
     loadingState,
     useDefaultButton,
     triggerButtonLabel,
+    modalHeight,
   } = properties;
   const {
     headerBackgroundColor,
@@ -37,44 +40,133 @@ export const Modal = function Modal({
     visibility,
     triggerButtonBackgroundColor,
     triggerButtonTextColor,
+    boxShadow,
   } = styles;
   const parentRef = useRef(null);
+  const controlBoxRef = useRef(null);
+  const isInitialRender = useRef(true);
 
   const title = properties.title ?? '';
   const size = properties.size ?? 'lg';
 
-  registerAction(
-    'open',
-    async function () {
-      setExposedVariable('show', true);
-      setShowModal(true);
-    },
-    [setShowModal]
-  );
-  registerAction(
-    'close',
-    async function () {
-      setShowModal(false);
-      setExposedVariable('show', false);
-    },
-    [setShowModal]
-  );
+  /**** Start - Logic to reset the zIndex of modal control box ****/
+  useEffect(() => {
+    if (!showModal && mode === 'edit') {
+      controlBoxRef.current?.classList?.remove('modal-moveable');
+      controlBoxRef.current = null;
+    }
+    if (showModal) {
+      useGridStore.getState().actions.setOpenModalWidgetId(id);
+    } else {
+      if (useGridStore.getState().openModalWidgetId === id) {
+        useGridStore.getState().actions.setOpenModalWidgetId(null);
+      }
+    }
+  }, [showModal]);
+  /**** End - Logic to reset the zIndex of modal control box ****/
 
   useEffect(() => {
-    const canShowModal = exposedVariables.show ?? false;
-    setShowModal(exposedVariables.show ?? false);
-    fireEvent(canShowModal ? 'onOpen' : 'onClose');
+    const exposedVariables = {
+      open: async function () {
+        setExposedVariable('show', true);
+        setShowModal(true);
+      },
+      close: async function () {
+        setShowModal(false);
+        setExposedVariable('show', false);
+      },
+    };
+    setExposedVariables(exposedVariables);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exposedVariables.show]);
+  }, [setShowModal]);
+
+  useEffect(() => {
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+    const canShowModal = exposedVariables.show ?? false;
+    fireEvent(!canShowModal && 'onClose');
+    setShowModal(exposedVariables.show ?? false);
+    const inputRef = document?.getElementsByClassName('tj-text-input-widget')?.[0];
+    inputRef?.blur();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exposedVariables]);
 
   function hideModal() {
     setShowModal(false);
-    setExposedVariable('show', false).then(() => fireEvent('onClose'));
+    setExposedVariable('show', false);
+    fireEvent('onClose');
   }
+
+  function openModal() {
+    setExposedVariable('show', true);
+    fireEvent('onOpen');
+  }
+
+  useEffect(() => {
+    const handleModalOpen = () => {
+      openModal();
+      const canvasElement = document.getElementsByClassName('canvas-area')[0];
+      const modalBackdropEl = document.getElementsByClassName('modal-backdrop')[0];
+      const realCanvasEl = document.getElementsByClassName('real-canvas')[0];
+      const modalCanvasEl = document.getElementById(`canvas-${id}`);
+
+      if (canvasElement && modalBackdropEl && modalCanvasEl && realCanvasEl) {
+        canvasElement.style.height = '100vh';
+        canvasElement.style.maxHeight = '100vh';
+        canvasElement.style.minHeight = '100vh';
+        canvasElement.style.height = '100vh';
+        modalCanvasEl.style.height = modalHeight;
+
+        realCanvasEl.style.height = '100vh';
+        realCanvasEl.style.position = 'absolute';
+
+        canvasElement?.classList?.add('freeze-scroll');
+        modalBackdropEl.style.height = '100vh';
+        modalBackdropEl.style.minHeight = '100vh';
+        modalBackdropEl.style.minHeight = '100vh';
+      }
+    };
+
+    const handleModalClose = () => {
+      const canvasElement = document.getElementsByClassName('canvas-area')[0];
+      const realCanvasEl = document.getElementsByClassName('real-canvas')[0];
+      const canvasHeight = realCanvasEl?.getAttribute('canvas-height');
+
+      if (canvasElement && realCanvasEl && canvasHeight) {
+        canvasElement.style.height = '';
+        canvasElement.style.minHeight = '';
+        canvasElement.style.maxHeight = '';
+
+        realCanvasEl.style.height = canvasHeight;
+        realCanvasEl.style.position = '';
+
+        canvasElement?.classList?.remove('freeze-scroll');
+      }
+    };
+    if (showModal) {
+      handleModalOpen();
+    } else {
+      if (document.getElementsByClassName('modal-content')[0] == undefined) {
+        handleModalClose();
+      }
+    }
+
+    // Cleanup the effect
+    return () => {
+      if (document.getElementsByClassName('modal-content')[0] == undefined) {
+        handleModalClose();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showModal, modalHeight]);
+
+  const backwardCompatibilityCheck = height == '34' || modalHeight != undefined ? true : false;
 
   const customStyles = {
     modalBody: {
-      height,
+      height: backwardCompatibilityCheck ? modalHeight : height,
       backgroundColor:
         ['#fff', '#ffffffff'].includes(bodyBackgroundColor) && darkMode ? '#1F2837' : bodyBackgroundColor,
       overflowX: 'hidden',
@@ -91,13 +183,14 @@ export const Modal = function Modal({
       width: '100%',
       display: visibility ? '' : 'none',
       '--tblr-btn-color-darker': tinycolor(triggerButtonBackgroundColor).darken(8).toString(),
+      boxShadow,
     },
   };
 
   useEffect(() => {
     if (closeOnClickingOutside) {
       const handleClickOutside = (event) => {
-        const modalRef = parentRef.current.parentElement.parentElement.parentElement;
+        const modalRef = parentRef?.current?.parentElement?.parentElement?.parentElement;
 
         if (modalRef && modalRef === event.target) {
           hideModal();
@@ -113,16 +206,27 @@ export const Modal = function Modal({
   }, [closeOnClickingOutside, parentRef]);
 
   return (
-    <div className="container" data-disabled={disabledState} data-cy={dataCy}>
+    <div
+      className="container d-flex align-items-center"
+      data-disabled={disabledState}
+      data-cy={dataCy}
+      style={{ height }}
+    >
       {useDefaultButton && (
         <button
           disabled={disabledState}
           className="jet-button btn btn-primary p-1 overflow-hidden"
           style={customStyles.buttonStyles}
           onClick={(event) => {
+            /**** Start - Logic to reduce the zIndex of modal control box ****/
+            controlBoxRef.current = document.querySelector(`.selected-component.sc-${id}`)?.parentElement;
+            if (mode === 'edit' && controlBoxRef.current) {
+              controlBoxRef.current.classList.add('modal-moveable');
+            }
+            /**** End - Logic to reduce the zIndex of modal control box ****/
+
             event.stopPropagation();
             setShowModal(true);
-            setExposedVariable('show', true);
           }}
           data-cy={`${dataCy}-launch-button`}
         >
@@ -158,7 +262,7 @@ export const Modal = function Modal({
       >
         {!loadingState ? (
           <>
-            <SubContainer parent={id} {...containerProps} parentRef={parentRef} />
+            <SubContainer parent={id} {...containerProps} parentRef={parentRef} parentComponent={component} />
             <SubCustomDragLayer
               snapToGrid={true}
               parentRef={parentRef}

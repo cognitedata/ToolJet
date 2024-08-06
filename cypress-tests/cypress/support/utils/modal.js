@@ -52,7 +52,8 @@ export const addAndVerifyColor = (
 };
 
 export const typeOnFx = (fx, data) => {
-  cy.get(commonWidgetSelector.parameterFxButton(fx)).eq(1).realClick();
+  cy.get(commonWidgetSelector.parameterTogglebutton(fx)).realHover();
+  cy.get(commonWidgetSelector.parameterFxButton(fx)).eq(0).realClick();
   cy.get(commonWidgetSelector.parameterInputField(fx)).clearAndTypeOnCodeMirror(
     data
   );

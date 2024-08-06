@@ -6,7 +6,7 @@ export const usersText = {
     usersFilterLabel: "Showing",
   },
   usersPageTitle: "users",
-  breadcrumbUsersPageTitle: " Users & permissions",
+  breadcrumbUsersPageTitle: " Users",
   adminUserName: "The Developer",
   adminUserEmail: "dev@tooljet.io",
   adminUserState: "Archive",
@@ -16,7 +16,8 @@ export const usersText = {
   cancelButton: "Cancel",
   buttonInviteUsers: "Invite users",
   errorTextFieldRequired: "This field is required",
-  exsitingEmail: "User with such email already exists.",
+  exsitingEmail:
+    "Duplicate email found. Please provide a unique email address.",
   userCreatedToast: "User has been created",
   inviteCopiedToast: "Invitation URL copied",
 

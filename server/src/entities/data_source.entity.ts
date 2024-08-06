@@ -34,7 +34,7 @@ export class DataSource extends BaseEntity {
     type: 'enum',
     enumName: 'type',
     name: 'type',
-    enum: [DataSourceTypes.STATIC, DataSourceTypes.DEFAULT],
+    enum: [DataSourceTypes.STATIC, DataSourceTypes.DEFAULT, DataSourceTypes.SAMPLE],
     default: DataSourceTypes.DEFAULT,
   })
   type: string;
@@ -57,7 +57,9 @@ export class DataSource extends BaseEntity {
   @UpdateDateColumn({ default: () => 'now()', name: 'updated_at' })
   updatedAt: Date;
 
-  @ManyToOne(() => AppVersion, (appVersion) => appVersion.id, { onDelete: 'CASCADE' })
+  @ManyToOne(() => AppVersion, (appVersion) => appVersion.id, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'app_version_id' })
   appVersion: AppVersion;
 

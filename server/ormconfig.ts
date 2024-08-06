@@ -79,8 +79,10 @@ function buildToolJetDbConnectionOptions(data): TypeOrmModuleOptions {
     password: data.TOOLJET_DB_PASS,
     host: data.TOOLJET_DB_HOST,
     connectTimeoutMS: 5000,
+    logging: data.ORM_LOGGING || false,
     extra: {
       max: 25,
+      statement_timeout: data.TOOLJET_DB_STATEMENT_TIMEOUT || 60000,
     },
     ...tooljetDbSslConfig(data),
   };

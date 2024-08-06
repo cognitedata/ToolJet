@@ -2,7 +2,7 @@ import React from 'react';
 import Select from '@/_ui/Select';
 import { queryManagerSelectComponentStyle } from '@/_ui/Select/styles';
 import { Tab, ListGroup, Row } from 'react-bootstrap';
-import { CodeHinter } from '../../CodeBuilder/CodeHinter';
+import CodeHinter from '@/Editor/CodeEditor';
 
 const GRPCComponent = ({ darkMode, selectedDataSource, ...restProps }) => {
   const protobufDefintion = JSON.parse(selectedDataSource?.options?.protobuf?.value);
@@ -148,7 +148,6 @@ const GRPCComponent = ({ darkMode, selectedDataSource, ...restProps }) => {
         <GRPCComponent.Tabs
           theme={darkMode ? 'monokai' : 'default'}
           metaDataoptions={metaDataOptions}
-          currentState={restProps.currentState}
           onChange={handleOnMetaDataKeyChange}
           onJsonBodyChange={handleJsonBodyChanged}
           removeKeyValuePair={removeMetaDataKeyValuePair}
@@ -164,7 +163,6 @@ const GRPCComponent = ({ darkMode, selectedDataSource, ...restProps }) => {
 
 function ControlledTabs({
   metaDataoptions,
-  currentState,
   theme,
   onChange,
   onJsonBodyChange,
@@ -198,7 +196,6 @@ function ControlledTabs({
             <Tab.Pane eventKey="metadata" t bsPrefix="rest-api-tabpanes" transition={false}>
               <GRPCComponent.TabContent
                 options={metaDataoptions}
-                currentState={currentState}
                 theme={theme}
                 removeKeyValuePair={removeKeyValuePair}
                 onChange={onChange}
@@ -214,16 +211,13 @@ function ControlledTabs({
               <div className="tab-content-wrapper">
                 <div>
                   <CodeHinter
-                    currentState={currentState}
+                    type="multiline"
                     initialValue={messageJSON || '{\n\n}'}
-                    mode="javascript"
-                    theme={darkMode ? 'monokai' : 'base16-light'}
+                    lang="javascript"
                     height={'300px'}
                     className="query-hinter"
-                    ignoreBraces={false}
                     onChange={(value) => onJsonBodyChange(value)}
                     componentName={`${componentName}/message`}
-                    enablePreview={false}
                   />
                 </div>
               </div>
@@ -237,7 +231,6 @@ function ControlledTabs({
 
 const TabContent = ({
   options = [],
-  currentState,
   theme,
   onChange,
   componentName,
@@ -256,10 +249,8 @@ const TabContent = ({
               <div className="d-flex justify-content-center align-items-center query-number">{index + 1}</div>
               <div className="field col-4 overflow-hidden">
                 <CodeHinter
-                  currentState={currentState}
+                  type="basic"
                   initialValue={option[0]}
-                  theme={theme}
-                  height={'32px'}
                   placeholder="Key"
                   onChange={(value) => onChange('key', index, value)}
                   componentName={`${componentName}/${tabType}::key::${index}`}
@@ -267,10 +258,8 @@ const TabContent = ({
               </div>
               <div className="field col overflow-hidden">
                 <CodeHinter
-                  currentState={currentState}
+                  type="basic"
                   initialValue={option[1]}
-                  theme={theme}
-                  height={'32px'}
                   placeholder="Value"
                   onChange={(value) => onChange('value', index, value)}
                   componentName={`${componentName}/${tabType}::value::${index}`}
@@ -284,7 +273,7 @@ const TabContent = ({
                 }}
               >
                 <span className="rest-api-delete-field-option query-icon-wrapper d-flex">
-                  <svg width="auto" height="auto" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="100%" height="100%" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                       fillRule="evenodd"
                       clipRule="evenodd"
@@ -307,7 +296,7 @@ const TabContent = ({
           role="button"
         >
           <span className="rest-api-add-field-svg">
-            <svg width="auto" height="auto" viewBox="0 0 24 25" fill="#5677E1" xmlns="http://www.w3.org/2000/svg">
+            <svg width="100%" height="100%" viewBox="0 0 24 25" fill="#5677E1" xmlns="http://www.w3.org/2000/svg">
               <path
                 fillRule="evenodd"
                 clipRule="evenodd"

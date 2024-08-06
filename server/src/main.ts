@@ -7,7 +7,7 @@ import { AppModule } from './app.module';
 import * as helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { urlencoded, json } from 'express';
-import { AllExceptionsFilter } from './all-exceptions-filter';
+import { AllExceptionsFilter } from './filters/all-exceptions-filter';
 import { RequestMethod, ValidationPipe, VersioningType, VERSION_NEUTRAL } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { bootstrap as globalAgentBootstrap } from 'global-agent';
@@ -16,6 +16,7 @@ import { join } from 'path';
 const fs = require('fs');
 
 globalThis.TOOLJET_VERSION = fs.readFileSync('./.version', 'utf8').trim();
+process.env['RELEASE_VERSION'] = globalThis.TOOLJET_VERSION;
 
 function replaceSubpathPlaceHoldersInStaticAssets() {
   const filesToReplaceAssetPath = ['index.html', 'runtime.js', 'main.js'];
@@ -92,6 +93,8 @@ async function bootstrap() {
           'https://unpkg.com/react-dom@16.7.0/umd/react-dom.production.min.js',
           'cdn.skypack.dev',
           'cdn.jsdelivr.net',
+          'https://esm.sh',
+          'www.googletagmanager.com',
         ],
         'default-src': [
           'maps.googleapis.com',
@@ -101,6 +104,7 @@ async function bootstrap() {
           '*.sentry.io',
           "'self'",
           'blob:',
+          'www.googletagmanager.com',
         ],
         'connect-src': ['ws://' + domain, "'self'", '*'],
         'frame-ancestors': ['*'],
@@ -113,6 +117,10 @@ async function bootstrap() {
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb', parameterLimit: 1000000 }));
   app.useStaticAssets(join(__dirname, 'assets'), { prefix: (UrlPrefix ? UrlPrefix : '/') + 'assets' });
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: VERSION_NEUTRAL,
+  });
 
   app.enableVersioning({
     type: VersioningType.URI,

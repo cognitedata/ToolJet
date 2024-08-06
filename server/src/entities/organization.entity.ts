@@ -19,8 +19,11 @@ export class Organization extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'name' })
+  @Column({ name: 'name', unique: true })
   name: string;
+
+  @Column({ name: 'slug', unique: true })
+  slug: string;
 
   @Column({ name: 'domain' })
   domain: string;

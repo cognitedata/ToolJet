@@ -1,6 +1,9 @@
 import _ from 'lodash';
 import React, { useState, useEffect } from 'react';
 import { MultiSelect } from 'react-multi-select-component';
+import SolidIcon from '@/_ui/Icon/SolidIcons';
+import TriangleDownArrow from '@/_ui/Icon/bulkIcons/TriangleDownArrow';
+import TriangleUpArrow from '@/_ui/Icon/bulkIcons/TriangleUpArrow';
 
 const ItemRenderer = ({ checked, option, onClick, disabled }) => (
   <div className={`item-renderer ${disabled && 'disabled'}`}>
@@ -8,6 +11,17 @@ const ItemRenderer = ({ checked, option, onClick, disabled }) => (
     <span>{option.label}</span>
   </div>
 );
+const DropdownIndicator = ({ isOpen, toggleDropdown }) => {
+  return (
+    <div onClick={toggleDropdown}>
+      {isOpen ? (
+        <TriangleUpArrow width={'18'} className="cursor-pointer" fill={'var(--borders-strong)'} />
+      ) : (
+        <TriangleDownArrow width={'18'} className="cursor-pointer" fill={'var(--borders-strong)'} />
+      )}
+    </div>
+  );
+};
 
 export const Multiselect = function Multiselect({
   id,
@@ -17,15 +31,17 @@ export const Multiselect = function Multiselect({
   styles,
   exposedVariables,
   setExposedVariable,
+  setExposedVariables,
   onComponentClick,
   darkMode,
   fireEvent,
-  registerAction,
   dataCy,
 }) {
   const { label, value, values, display_values, showAllOption } = properties;
-  const { borderRadius, visibility, disabledState } = styles;
+  const { borderRadius, visibility, disabledState, boxShadow } = styles;
   const [selected, setSelected] = useState([]);
+  const [searched, setSearched] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
 
   let selectOptions = [];
   try {
@@ -37,6 +53,31 @@ export const Multiselect = function Multiselect({
   } catch (err) {
     console.log(err);
   }
+
+  const handleDropdownOpen = () => {
+    setIsOpen(true);
+  };
+
+  const handleDropdownClose = () => {
+    setIsOpen(false);
+  };
+
+  const toggleDropdown = () => {
+    setIsOpen((prevState) => !prevState);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && !event.target.closest('.multiselect-widget')) {
+        handleDropdownClose();
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     let newValues = [];
@@ -70,68 +111,85 @@ export const Multiselect = function Multiselect({
     setExposedVariable(
       'values',
       items.map((item) => item.value)
-    ).then(() => fireEvent('onSelect'));
+    );
+    fireEvent('onSelect');
   };
 
-  registerAction(
-    'selectOption',
-    async function (value) {
-      if (
-        selectOptions.some((option) => option.value === value) &&
-        !selected.some((option) => option.value === value)
-      ) {
-        const newSelected = [
-          ...selected,
-          ...selectOptions.filter(
-            (option) =>
-              option.value === value && !selected.map((selectedOption) => selectedOption.value).includes(value)
-          ),
-        ];
-        setSelected(newSelected);
-        setExposedVariable(
-          'values',
-          newSelected.map((item) => item.value)
-        ).then(() => fireEvent('onSelect'));
-      }
-    },
-    [selected, setSelected]
-  );
-  registerAction(
-    'deselectOption',
-    async function (value) {
-      if (selectOptions.some((option) => option.value === value) && selected.some((option) => option.value === value)) {
-        const newSelected = [
-          ...selected.filter(function (item) {
-            return item.value !== value;
-          }),
-        ];
-        setSelected(newSelected);
-        setExposedVariable(
-          'values',
-          newSelected.map((item) => item.value)
-        ).then(() => fireEvent('onSelect'));
-      }
-    },
-    [selected, setSelected]
-  );
-  registerAction(
-    'clearSelections',
-    async function () {
-      if (selected.length >= 1) {
-        setSelected([]);
-        setExposedVariable('values', []).then(() => fireEvent('onSelect'));
-      }
-    },
-    [selected, setSelected]
-  );
+  useEffect(() => {
+    const exposedVariables = {
+      selectOption: async function (value) {
+        if (
+          selectOptions.some((option) => option.value === value) &&
+          !selected.some((option) => option.value === value)
+        ) {
+          const newSelected = [
+            ...selected,
+            ...selectOptions.filter(
+              (option) =>
+                option.value === value && !selected.map((selectedOption) => selectedOption.value).includes(value)
+            ),
+          ];
+          setSelected(newSelected);
+          setExposedVariable(
+            'values',
+            newSelected.map((item) => item.value)
+          );
+          fireEvent('onSelect');
+        }
+      },
+      deselectOption: async function (value) {
+        if (
+          selectOptions.some((option) => option.value === value) &&
+          selected.some((option) => option.value === value)
+        ) {
+          const newSelected = [
+            ...selected.filter(function (item) {
+              return item.value !== value;
+            }),
+          ];
+          setSelected(newSelected);
+          setExposedVariable(
+            'values',
+            newSelected.map((item) => item.value)
+          );
+          fireEvent('onSelect');
+        }
+      },
+      clearSelections: async function () {
+        if (selected.length >= 1) {
+          setSelected([]);
+          setExposedVariable('values', []);
+          fireEvent('onSelect');
+        }
+      },
+    };
 
+    setExposedVariables(exposedVariables);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, setSelected]);
+
+  const filterOptions = (options, filter) => {
+    setSearched(filter);
+
+    if (searched !== filter) {
+      setExposedVariable('searchText', filter);
+      fireEvent('onSearchTextChanged');
+    }
+    if (!filter) return options;
+
+    return options.filter(
+      ({ label, value }) => label != null && value != null && label.toLowerCase().includes(filter.toLowerCase())
+    );
+  };
   return (
     <div
       className="multiselect-widget row g-0"
       data-cy={dataCy}
       style={{ height, display: visibility ? '' : 'none' }}
-      onFocus={() => {
-        onComponentClick(this, id, component);
+      onClick={(event) => {
+        event.stopPropagation();
+        onComponentClick(id, component, event);
       }}
     >
       <div className="col-auto my-auto d-flex align-items-center">
@@ -143,7 +201,7 @@ export const Multiselect = function Multiselect({
           {label}
         </label>
       </div>
-      <div className="col px-0 h-100" style={{ borderRadius: parseInt(borderRadius) }}>
+      <div className="col px-0 h-100" style={{ borderRadius: parseInt(borderRadius), boxShadow }}>
         <MultiSelect
           hasSelectAll={showAllOption ?? false}
           options={selectOptions}
@@ -153,6 +211,26 @@ export const Multiselect = function Multiselect({
           disabled={disabledState}
           className={`multiselect-box${darkMode ? ' dark dark-multiselectinput' : ''}`}
           ItemRenderer={ItemRenderer}
+          filterOptions={filterOptions}
+          debounceDuration={0}
+          isOpen={isOpen}
+          onMenuOpen={handleDropdownOpen}
+          onMenuClose={handleDropdownClose}
+          ArrowRenderer={() => <DropdownIndicator isOpen={isOpen} toggleDropdown={toggleDropdown} />}
+          onMenuToggle={(isOpen) => {
+            /* 
+            This is a hack added so that elememt shows up above the other sibling elements. 
+            This is needed since dropdown is added attached to the widget itself and not the body.
+            */
+            if (!document.querySelector(`.ele-${id}`)) {
+              return;
+            }
+            if (isOpen) {
+              document.querySelector(`.ele-${id}`).style.zIndex = 3;
+            } else {
+              document.querySelector(`.ele-${id}`).style.zIndex = '';
+            }
+          }}
         />
       </div>
     </div>

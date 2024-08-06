@@ -1,5 +1,10 @@
 import React from 'react';
-import { CodeHinter } from '../../CodeBuilder/CodeHinter';
+import _ from 'lodash';
+import { useCurrentState } from '@/_stores/currentStateStore';
+import CodeEditor from '@/Editor/CodeEditor';
+import { getDefinitionInitialValue } from './utils';
+
+const CLIENT_SERVER_TOGGLE_FIELDS = ['serverSidePagination', 'serverSideSort', 'serverSideFilter'];
 
 export const Code = ({
   param,
@@ -7,15 +12,20 @@ export const Code = ({
   onChange,
   paramType,
   componentMeta,
-  currentState,
-  darkMode,
   componentName,
   onFxPress,
   fxActive,
   component,
+  accordian,
+  placeholder,
 }) => {
-  const initialValue = definition ? definition.value : '';
-  const paramMeta = componentMeta[paramType][param.name];
+  const currentState = useCurrentState();
+
+  let initialValue = !_.isEmpty(definition)
+    ? definition.value
+    : getDefinitionInitialValue(paramType, param.name, component, currentState, definition.value);
+
+  const paramMeta = accordian ? componentMeta[paramType]?.[param.name] : componentMeta[paramType][param.name];
   const displayName = paramMeta.displayName || param.name;
 
   function handleCodeChanged(value) {
@@ -28,25 +38,30 @@ export const Code = ({
     return param.name;
   }, [param]);
 
+  function onVisibilityChange(value) {
+    onChange({ name: 'iconVisibility' }, 'value', value, 'styles');
+  }
+
   return (
-    <div className={`mb-2 field ${options.className}`}>
-      <CodeHinter
-        enablePreview={true}
-        currentState={currentState}
+    <div className={`field ${options.className}`} style={{ marginBottom: '8px' }}>
+      <CodeEditor
+        type="fxEditor"
         initialValue={initialValue}
-        mode={options.mode}
-        theme={darkMode ? 'monokai' : options.theme}
-        lineWrapping={true}
-        className={options.className}
-        onChange={(value) => handleCodeChanged(value)}
-        componentName={`widget/${componentName}::${getfieldName}`}
-        type={paramMeta.type}
         paramName={param.name}
-        paramLabel={displayName}
+        paramLabel={paramMeta?.showLabel !== false ? displayName : ' '}
+        paramType={paramMeta.type}
         fieldMeta={paramMeta}
         onFxPress={onFxPress}
-        fxActive={fxActive}
-        component={component}
+        fxActive={CLIENT_SERVER_TOGGLE_FIELDS.includes(param.name) ? false : fxActive} // Client Server Toggle don't support Fx
+        componentName={`component/${componentName}::${getfieldName}`}
+        onChange={(value) => handleCodeChanged(value)}
+        className={options?.className}
+        componentId={component?.id}
+        styleDefinition={component?.component?.definition?.styles ?? {}}
+        component={component?.component?.component}
+        onVisibilityChange={onVisibilityChange}
+        placeholder={placeholder}
+        cyLabel=""
       />
     </div>
   );

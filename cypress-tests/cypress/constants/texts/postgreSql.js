@@ -2,10 +2,19 @@ export const postgreSqlText = {
   labelDataSources: "Datasources",
   labelAddDataSource: "+ add data source",
 
-  allDataSources: "All Datasources (42)",
-  allDatabase: "Databases (19)",
+  allDataSources: () => {
+    return Cypress.env("marketplace_action")
+      ? "All data sources (44)"
+      : "All data sources (42)";
+  },
+  commonlyUsed: "Commonly used (5)",
+  allDatabase: () => {
+    return Cypress.env("marketplace_action")
+      ? "Databases (20)"
+      : "Databases (18)";
+  },
   allApis: "APIs (20)",
-  allCloudStorage: "Cloud Storage (3)",
+  allCloudStorage: "Cloud Storages (4)",
 
   postgreSQL: "PostgreSQL",
   labelHost: "Host",
@@ -26,14 +35,14 @@ export const postgreSqlText = {
   psqlName: "cypress-postgresql",
 
   labelConnectionVerified: "connection verified",
-  toastDSAdded: "Datasource Added",
+  toastDSAdded: "Data Source Added",
   placeholderNameOfDB: "Name of the database",
   placeholderEnterHost: "Enter host",
   placeholderEnterPort: "Enter port",
   placeholderEnterUserName: "Enter username",
 
   headerQueries: "Queries",
-  headerSelectDatasource: "Select Datasource",
+  headerSelectDatasource: "Select Data Source",
   noQueryText: "You haven't created queries yet.",
   buttonLabelCreateQuery: "Create query",
   tabGeneral: "General",
@@ -64,8 +73,9 @@ export const postgreSqlText = {
   yes: "Yes",
 
   guiOptionBulkUpdate: "Bulk update using primary key",
-  buttonTextTestConnection: "Test Connection",
+  buttonTextTestConnection: "Test connection",
 
   tabAdvanced: "Advanced",
-  labelNoEventhandler: "This query doesn't have any event handlers",
+  labelNoEventhandler: "No event handlers",
+  toastDSSaved: "Data Source Saved",
 };
