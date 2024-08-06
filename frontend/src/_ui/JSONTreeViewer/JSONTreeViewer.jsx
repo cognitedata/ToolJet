@@ -2,6 +2,8 @@ import _ from 'lodash';
 import React from 'react';
 import { JSONNode } from './JSONNode';
 import ErrorBoundary from '@/Editor/ErrorBoundary';
+import WidgetIcon from '@/../assets/images/icons/widgets';
+import { ToolTip } from '@/_components/ToolTip';
 
 export class JSONTreeViewer extends React.Component {
   constructor(props) {
@@ -75,22 +77,63 @@ export class JSONTreeViewer extends React.Component {
 
     return 0;
   }
+  extractComponentName = (path) => {
+    // Match the last part of the URL before ".svg" using a regular expression
+    const match = path.match(/\/([^/]+)\.svg$/);
+
+    if (match && match[1]) {
+      return match[1]; // Return the matched component name
+    } else {
+      return null; // Return null if the pattern doesn't match
+    }
+  };
 
   renderNodeIcons = (node) => {
-    const icon = this.props.iconsList.filter((icon) => icon?.iconName === node)[0];
-
-    if (icon && icon.iconPath) {
+    const icon = this.props.iconsList.filter((icon) => icon?.iconName === node && !icon?.isInfoIcon)[0];
+    if (icon && icon?.iconPath) {
       return (
-        <img
-          style={{ maxWidth: 'none', padding: '2px' }}
-          className={`json-tree-svg-icon ${icon.className}`}
-          src={icon.iconPath}
+        <WidgetIcon
+          name={this.extractComponentName(icon?.iconPath)}
+          fill={this.props.darkMode ? '#3A3F42' : '#D7DBDF'}
+          width="16"
         />
       );
     }
     if (icon && icon.jsx) {
+      if (icon?.tooltipMessage) {
+        return (
+          <ToolTip message={icon?.tooltipMessage}>
+            <div>{icon.jsx()}</div>
+          </ToolTip>
+        );
+      }
       return icon.jsx();
     }
+  };
+
+  renderCurrentNodeInfoIcon = (node) => {
+    const icon = this.props.iconsList.filter((icon) => icon?.iconName === node)[0];
+    if (icon?.isInfoIcon) {
+      if (icon && icon?.iconPath) {
+        return (
+          <WidgetIcon
+            name={this.extractComponentName(icon?.iconPath)}
+            fill={this.props.darkMode ? '#3A3F42' : '#D7DBDF'}
+            width="16"
+          />
+        );
+      }
+      if (icon && icon.jsx) {
+        if (icon?.tooltipMessage) {
+          return (
+            <ToolTip message={icon?.tooltipMessage}>
+              <div className="d-flex">{icon.jsx()}</div>
+            </ToolTip>
+          );
+        }
+        return icon.jsx();
+      }
+    } else return null;
   };
 
   updateSelectedNode = (node, path) => {
@@ -128,8 +171,12 @@ export class JSONTreeViewer extends React.Component {
 
   getOnSelectLabelDispatchActions = (currentNode, path) => {
     const actions = [];
-    const parent = path ? path[path.length - 2] : 'root';
-    const dispatchActionForCurrentNode = this.getDispatchActionsForNode(parent);
+    let parent = path ? path[path.length - 2] : 'root';
+
+    const nodeActions = this.props.treeType === 'debugger' && currentNode === 'componentId' ? 'all' : parent;
+
+    const dispatchActionForCurrentNode = this.getDispatchActionsForNode(nodeActions);
+
     if (currentNode === parent) return;
 
     if (dispatchActionForCurrentNode && dispatchActionForCurrentNode['enableFor1stLevelChildren']) {
@@ -226,6 +273,8 @@ export class JSONTreeViewer extends React.Component {
             getAbsoluteNodePath={this.getAbsoluteNodePath}
             fontSize={this.props.fontSize ?? '12px'}
             inspectorTree={this.props.treeType === 'inspector'}
+            debuggerTree={this.props.treeType === 'debugger'}
+            renderCurrentNodeInfoIcon={this.renderCurrentNodeInfoIcon}
           />
         </ErrorBoundary>
       </div>

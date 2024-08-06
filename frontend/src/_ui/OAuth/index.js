@@ -25,6 +25,10 @@ const OAuth = ({
   add_token_to,
   multiple_auth_enabled,
   optionchanged,
+  workspaceConstants,
+  options,
+  optionsChanged,
+  selectedDataSource,
 }) => {
   const authOptions = (isGrpc = false) => {
     const options = [
@@ -76,6 +80,10 @@ const OAuth = ({
         grpc_apiKey_value={grpc_apiKey_value}
         bearer_token={bearer_token}
         auth_url={auth_url}
+        workspaceConstants={workspaceConstants}
+        options={options}
+        optionsChanged={optionsChanged}
+        selectedDataSource={selectedDataSource}
       />
     </>
   );

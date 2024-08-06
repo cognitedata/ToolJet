@@ -23,6 +23,8 @@ const Drawer = ({
   onClose,
   position = 'left',
   removeWhenClosed = true,
+  drawerStyle,
+  isForeignKeyRelation = false,
 }) => {
   const bodyRef = useRef(document.querySelector('body'));
   const portalRootRef = useRef(document.getElementById('tooljet-drawer-root') || createPortalRoot());
@@ -45,14 +47,6 @@ const Drawer = ({
 
     updatePageScroll();
   }, [isOpen]);
-
-  const onKeyPress = (e) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  };
-
-  useEventListener('keyup', onKeyPress);
 
   if (!isTransitioning && removeWhenClosed && !isOpen) {
     return null;
@@ -77,23 +71,30 @@ const Drawer = ({
     };
   }
 
+  const isForeignKeyDrawer = isForeignKeyRelation ? 'foreignKeyDrawerRight' : '';
+  const isForeignKeyBackdrop = isForeignKeyRelation ? 'foreignKeyBackdrop' : '';
+
   return createPortal(
     <ErrorBoundary showFallback={true}>
-      <FocusTrap active={isOpen && !disableFocus}>
+      <FocusTrap
+        // The allowOutsideClick option is used to enable or disable clicks outside the popover for functions that are inside the popover but not within the focus trap. On the other hand, clickOutsideDeactivates is used to unfocus the last focused element which is outside the popover.
+        focusTrapOptions={{ initialFocus: false, allowOutsideClick: true, clickOutsideDeactivates: true }}
+        active={isOpen && !disableFocus}
+      >
         <div
           aria-hidden={`${!isOpen}`}
           className={cx('drawer-container', {
             open: isOpen,
             in: isTransitioning,
-            className,
+            [className]: true,
             'theme-dark dark-theme': darkMode,
           })}
         >
           <Toast toastOptions={toastOptions} />
-          <div className={cx('drawer', position)} role="dialog">
+          <div className={cx('drawer', position, isForeignKeyDrawer)} role="dialog" style={drawerStyle}>
             {children}
           </div>
-          <div className="backdrop" onClick={onClose} />
+          <div className={cx('backdrop', isForeignKeyBackdrop)} onClick={onClose} />
         </div>
       </FocusTrap>
     </ErrorBoundary>,

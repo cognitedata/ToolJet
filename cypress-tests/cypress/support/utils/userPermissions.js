@@ -10,13 +10,12 @@ import { dashboardSelector } from "Selectors/dashboard";
 
 export const adminLogin = () => {
   common.logout();
-  cy.appUILogin();
+  cy.defaultWorkspaceLogin();
   common.navigateToManageGroups();
 };
 
 export const reset = () => {
   common.navigateToManageGroups();
-  cy.contains(groupsText.allUsers).click();
   cy.get(groupsSelector.permissionsLink).click();
 
   cy.get(groupsSelector.appsCreateCheck).then(($el) => {
@@ -42,18 +41,6 @@ export const reset = () => {
       cy.get(groupsSelector.workspaceVarCheckbox).uncheck();
     }
   });
-};
-
-export const addNewUserMW = (firstName, email, companyName) => {
-  common.navigateToManageUsers();
-  users.inviteUser(firstName, email);
-  cy.clearAndType(commonSelectors.passwordInputField, usersText.password);
-  cy.get(commonSelectors.acceptInviteButton).click();
-  cy.get(commonSelectors.workspaceName).verifyVisibleElement(
-    "have.text",
-    "My workspace"
-  );
-  updateWorkspaceName(email);
 };
 
 export const updateWorkspaceName = (email) => {

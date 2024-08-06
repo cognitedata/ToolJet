@@ -27,15 +27,31 @@ export class CreateDataSourceDto {
 
   @IsOptional()
   scope: string;
+
+  @IsUUID()
+  @IsOptional()
+  environment_id: string;
 }
 
 export class UpdateDataSourceDto extends PartialType(CreateDataSourceDto) {}
-export class TestDataSourceDto extends PartialType(CreateDataSourceDto) {}
+export class TestDataSourceDto extends PartialType(CreateDataSourceDto) {
+  @IsString()
+  @IsOptional()
+  @Transform(({ value }) => sanitizeInput(value))
+  environment_id: string;
+}
 
 export class GetDataSourceOauthUrlDto {
   @IsString()
   @IsNotEmpty()
   provider: string;
+
+  @IsOptional()
+  source_options: any;
+
+  @IsString()
+  @IsOptional()
+  plugin_id: string;
 }
 
 export class AuthorizeDataSourceOauthDto {

@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
+
 export const DropDown = function DropDown({
   height,
   validate,
@@ -13,13 +14,15 @@ export const DropDown = function DropDown({
   id,
   component,
   exposedVariables,
-  registerAction,
   dataCy,
 }) {
   let { label, value, advanced, schema, placeholder, display_values, values } = properties;
   const { selectedTextColor, borderRadius, visibility, disabledState, justifyContent, boxShadow } = styles;
   const [currentValue, setCurrentValue] = useState(() => (advanced ? findDefaultItem(schema) : value));
   const { value: exposedValue } = exposedVariables;
+  const [showValidationError, setShowValidationError] = useState(false);
+  const validationData = validate(value);
+  const { isValid, validationError } = validationData;
 
   function findDefaultItem(schema) {
     const foundItem = schema?.find((item) => item?.default === true);
@@ -57,7 +60,10 @@ export const DropDown = function DropDown({
 
   const setExposedItem = (value, index, onSelectFired = false) => {
     setCurrentValue(value);
-    onSelectFired ? setExposedVariable('value', value).then(fireEvent('onSelect')) : setExposedVariable('value', value);
+    if (onSelectFired) {
+      setExposedVariable('value', value);
+      fireEvent('onSelect');
+    } else setExposedVariable('value', value);
     setExposedVariable('selectedOptionLabel', index === undefined ? undefined : display_values?.[index]);
   };
 
@@ -72,16 +78,12 @@ export const DropDown = function DropDown({
     }
   }
 
-  registerAction(
-    'selectOption',
-    async function (value) {
+  useEffect(() => {
+    setExposedVariable('selectOption', async function (value) {
       selectOption(value);
-    },
-    [JSON.stringify(values), setCurrentValue, JSON.stringify(display_values)]
-  );
-
-  const validationData = validate(value);
-  const { isValid, validationError } = validationData;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(values), setCurrentValue, JSON.stringify(display_values)]);
 
   useEffect(() => {
     setExposedVariable('isValid', isValid);
@@ -98,7 +100,7 @@ export const DropDown = function DropDown({
     setExposedItem(newValue, index);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, JSON.stringify(values)]);
+  }, [JSON.stringify(value), JSON.stringify(values)]);
 
   useEffect(() => {
     let index = null;
@@ -164,7 +166,6 @@ export const DropDown = function DropDown({
       boxShadow: state.isFocused ? boxShadow : boxShadow,
       borderRadius: Number.parseFloat(borderRadius),
     }),
-
     valueContainer: (provided, _state) => ({
       ...provided,
       height: height,
@@ -244,9 +245,11 @@ export const DropDown = function DropDown({
             isDisabled={disabledState}
             value={selectOptions.filter((option) => option.value === currentValue)[0] ?? null}
             onChange={(selectedOption, actionProps) => {
+              setShowValidationError(true);
               if (actionProps.action === 'select-option') {
                 setCurrentValue(selectedOption.value);
-                setExposedVariable('value', selectedOption.value).then(() => fireEvent('onSelect'));
+                setExposedVariable('value', selectedOption.value);
+                fireEvent('onSelect');
                 setExposedVariable('selectedOptionLabel', selectedOption.label);
               }
             }}
@@ -260,7 +263,9 @@ export const DropDown = function DropDown({
           />
         </div>
       </div>
-      <div className={`invalid-feedback ${isValid ? '' : visibility ? 'd-flex' : 'none'}`}>{validationError}</div>
+      <div className={`invalid-feedback ${isValid ? '' : visibility ? 'd-flex' : 'none'}`}>
+        {showValidationError && validationError}
+      </div>
     </>
   );
 };

@@ -3,13 +3,12 @@ import _ from 'lodash';
 import cx from 'classnames';
 import { ToolTip } from '@/_components/ToolTip';
 import CopyToClipboardComponent from '@/_components/CopyToClipboard';
-import { Popover } from 'react-bootstrap';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import JSONNodeObject from './JSONNodeObject';
 import JSONNodeArray from './JSONNodeArray';
 import JSONNodeValue from './JSONNodeValue';
 import JSONNodeIndicator from './JSONNodeIndicator';
 import JSONNodeMap from './JSONNodeMap';
+import SolidIcon from '@/_ui/Icon/SolidIcons';
 
 export const JSONNode = ({ data, ...restProps }) => {
   const {
@@ -35,6 +34,8 @@ export const JSONNode = ({ data, ...restProps }) => {
     actionsList,
     fontSize,
     inspectorTree,
+    renderCurrentNodeInfoIcon,
+    debuggerTree,
   } = restProps;
 
   const [expandable, set] = React.useState(() =>
@@ -95,6 +96,7 @@ export const JSONNode = ({ data, ...restProps }) => {
   let $VALUE = null;
   let $NODEType = null;
   let $NODEIcon = null;
+  let $NODEInfoIcon = null;
 
   const checkSelectedNode = (_selectedNode, _currentNode, parent, toExpand) => {
     if (selectedNode?.parent && parent) {
@@ -136,6 +138,7 @@ export const JSONNode = ({ data, ...restProps }) => {
 
   if (toUseNodeIcons && currentNode) {
     $NODEIcon = renderNodeIcons(currentNode);
+    $NODEInfoIcon = renderCurrentNodeInfoIcon(currentNode);
   }
 
   switch (typeofCurrentNode) {
@@ -192,7 +195,13 @@ export const JSONNode = ({ data, ...restProps }) => {
 
   let $key = (
     <span
-      onClick={() => toExpandNode && handleOnClickLabels(data, currentNode, path)}
+      onClick={() => {
+        const shouldTriggerActions = debuggerTree && currentNode === 'componentId';
+
+        if (toExpandNode || shouldTriggerActions) {
+          handleOnClickLabels(data, currentNode, path);
+        }
+      }}
       style={{ marginTop: '1px', cursor: 'pointer', textTransform: 'none', fontSize: fontSize }}
       className={cx('node-key mx-0 badge badge-outline', {
         'color-primary': applySelectedNodeStyles && !showHiddenOptionsForNode,
@@ -212,35 +221,6 @@ export const JSONNode = ({ data, ...restProps }) => {
     useIndentedBlock &&
     expandable &&
     (typeofCurrentNode === 'Object' || typeofCurrentNode === 'Array' || typeofCurrentNode === 'Map');
-
-  function moreActionsPopover(actions) {
-    //Todo: For adding more actions to the menu popover!
-    const darkMode = localStorage.getItem('darkMode') === 'true';
-
-    return (
-      <Popover
-        id="popover-basic popover-positioned-right json-tree-popover"
-        style={{ maxWidth: '350px', padding: '0px' }}
-        className={`shadow ${darkMode && 'popover-dark-themed theme-dark'}`}
-      >
-        <div className="list-group">
-          {actions?.map((action, index) => (
-            <span
-              key={index}
-              type="button"
-              className="list-group-item list-group-item-action popover-more-actions"
-              aria-current="true"
-              onClick={() => {
-                action.dispatchAction(data, currentNode);
-              }}
-            >
-              {action.name}
-            </span>
-          ))}
-        </div>
-      </Popover>
-    );
-  }
 
   const renderHiddenOptionsForNode = () => {
     const moreActions = actionsList.filter((action) => action.for === 'all')[0];
@@ -267,56 +247,41 @@ export const JSONNode = ({ data, ...restProps }) => {
     };
 
     return (
-      <div style={{ fontSize: '9px', marginTop: '0px' }} className="d-flex end-0 position-absolute">
+      <div style={{ fontSize: '9px', marginTop: '0px', right: '10px' }} className="d-flex position-absolute">
         {enableCopyToClipboard && (
           <CopyToClipboardComponent data={currentNodePath} path={true} callback={getAbsoluteNodePath} />
         )}
-        {renderOptions()}
-
-        {moreActions.actions?.length > 0 && (
-          <OverlayTrigger
-            rootClose={true}
-            rootCloseEvent="mousedown"
-            trigger="click"
-            placement={'right'}
-            overlay={moreActionsPopover(moreActions?.actions)}
+        <ToolTip message={'Copy value'}>
+          <span
+            onClick={() => {
+              moreActions['actions'][0].dispatchAction(data, currentNode);
+            }}
+            data-cy={`copy-value-to-clicpboard`}
           >
-            <span>
-              <ToolTip message={'More actions'}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="icon-tabler icon-tabler-dots-vertical"
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  strokeWidth="2"
-                  stroke="#2c3e50"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <circle cx="12" cy="12" r="1" />
-                  <circle cx="12" cy="19" r="1" />
-                  <circle cx="12" cy="5" r="1" />
-                </svg>
-              </ToolTip>
-            </span>
-          </OverlayTrigger>
-        )}
+            <SolidIcon width="12" height="12" name="copy" />
+          </span>
+        </ToolTip>
+        {renderOptions()}
       </div>
     );
   };
 
   return (
     <div
-      className={cx('d-flex row-flex mt-1 font-monospace container-fluid px-1', {
+      className={cx('d-flex row-flex mt-1 container-fluid px-1', {
         'json-node-element': !expandable,
       })}
       onMouseLeave={() => updateHoveredNode(null)}
     >
       {(inspectorTree || toShowNodeIndicator) && (
-        <div className={`json-tree-icon-container  mx-2 ${applySelectedNodeStyles && 'selected-node'}`}>
+        <div
+          className={cx('json-tree-icon-container', {
+            'mx-2': !$NODEInfoIcon,
+            'm-0': $NODEInfoIcon,
+            'selected-node': applySelectedNodeStyles,
+          })}
+        >
+          {$NODEInfoIcon && $NODEInfoIcon}
           <JSONNodeIndicator
             toExpand={expandable}
             toShowNodeIndicator={toShowNodeIndicator}

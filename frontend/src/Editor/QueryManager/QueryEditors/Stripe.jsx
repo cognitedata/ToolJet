@@ -1,11 +1,11 @@
 import React from 'react';
-import 'codemirror/theme/duotone-light.css';
+// import 'codemirror/theme/duotone-light.css';
 import DOMPurify from 'dompurify';
 import Select from '@/_ui/Select';
 import { openapiService } from '@/_services';
-import { CodeHinter } from '../../CodeBuilder/CodeHinter';
 import { withTranslation } from 'react-i18next';
 import { queryManagerSelectComponentStyle } from '@/_ui/Select/styles';
+import CodeHinter from '@/Editor/CodeEditor';
 
 const operationColorMapping = {
   get: 'azure',
@@ -186,11 +186,11 @@ class StripeComponent extends React.Component {
 
         {options && !loadingSpec && (
           <div>
-            <div className="row g-2">
-              <div className="col-12">
+            <div className="d-flex g-2">
+              <div className="col-12 form-label">
                 <label className="form-label">{this.props.t('globals.operation', 'Operation')}</label>
               </div>
-              <div className="col stripe-operation-options" style={{ width: '90px', marginTop: 0 }}>
+              <div className="col stripe-operation-options flex-grow-1" style={{ width: '90px', marginTop: 0 }}>
                 <Select
                   options={this.computeOperationSelectionOptions(specJson)}
                   value={currentValue}
@@ -231,14 +231,10 @@ class StripeComponent extends React.Component {
                             </div>
                             <div className="col field overflow-hidden">
                               <CodeHinter
-                                currentState={this.props.currentState}
+                                type="basic"
                                 initialValue={this.state.options.params.path[param.name]}
-                                mode="text"
                                 placeholder={'Value'}
-                                theme={this.props.darkMode ? 'monokai' : 'duotone-light'}
-                                lineNumbers={false}
                                 onChange={(value) => this.changeParam('path', param.name, value)}
-                                height={'32px'}
                               />
                             </div>
                             <span
@@ -247,8 +243,8 @@ class StripeComponent extends React.Component {
                               onClick={() => this.removeParam('path', param.name)}
                             >
                               <svg
-                                width="auto"
-                                height="auto"
+                                width="100%"
+                                height="100%"
                                 viewBox="0 0 12 13"
                                 fill="none"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -288,14 +284,10 @@ class StripeComponent extends React.Component {
                             </div>
                             <div className="col field overflow-hidden">
                               <CodeHinter
-                                currentState={this.props.currentState}
+                                type="basic"
                                 initialValue={this.state.options.params?.query[param.name] ?? ''}
-                                mode="text"
                                 placeholder={'Value'}
-                                theme={this.props.darkMode ? 'monokai' : 'duotone-light'}
-                                lineNumbers={false}
                                 onChange={(value) => this.changeParam('query', param.name, value)}
-                                height={'32px'}
                               />
                             </div>
                             <span
@@ -304,8 +296,8 @@ class StripeComponent extends React.Component {
                               onClick={() => this.removeParam('query', param.name)}
                             >
                               <svg
-                                width="auto"
-                                height="auto"
+                                width="100%"
+                                height="100%"
                                 viewBox="0 0 12 13"
                                 fill="none"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -327,13 +319,13 @@ class StripeComponent extends React.Component {
 
                 {requestBody.schema.properties && (
                   <div
-                    className={`request-body-fields ${
+                    className={`request-body-fields d-flex ${
                       Object.keys(requestBody.schema.properties).length === 0 && 'd-none'
                     } `}
                   >
-                    <h5 className="text-heading">{this.props.t('globals.requestBody', 'REQUEST BODY')}</h5>
+                    <h5 className="text-heading form-label">{this.props.t('globals.requestBody', 'REQUEST BODY')}</h5>
                     <div
-                      className={`${
+                      className={`flex-grow-1 ${
                         Object.keys(requestBody.schema.properties).length >= 1 && 'input-group-parent-container'
                       }`}
                     >
@@ -345,14 +337,10 @@ class StripeComponent extends React.Component {
                             </div>
                             <div className="col field overflow-hidden">
                               <CodeHinter
-                                currentState={this.props.currentState}
+                                type="basic"
                                 initialValue={this.state.options.params?.request[param] ?? ''}
-                                mode="text"
                                 placeholder={'Value'}
-                                theme={this.props.darkMode ? 'monokai' : 'duotone-light'}
-                                lineNumbers={false}
                                 onChange={(value) => this.changeParam('request', param, value)}
-                                height={'32px'}
                               />
                             </div>
                             <span
@@ -361,8 +349,8 @@ class StripeComponent extends React.Component {
                               onClick={() => this.removeParam('request', param)}
                             >
                               <svg
-                                width="auto"
-                                height="auto"
+                                width="100%"
+                                height="100%"
                                 viewBox="0 0 12 13"
                                 fill="none"
                                 xmlns="http://www.w3.org/2000/svg"

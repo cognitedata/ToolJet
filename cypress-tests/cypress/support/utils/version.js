@@ -105,7 +105,7 @@ export const deleteVersionAndVerify = (value, toastMessageText) => {
     deleteVersionText.deleteModalText(value)
   );
   cy.get(confirmVersionModalSelectors.yesButton).click();
-  cy.verifyToastMessage(commonSelectors.toastMessage, toastMessageText);
+  cy.verifyToastMessage(commonSelectors.toastMessage, toastMessageText, false);
 };
 
 export const verifyDuplicateVersion = (newVersion = [], version) => {
@@ -151,5 +151,7 @@ export const verifyVersionAfterPreview = (currentVersion) => {
     .click();
   cy.url().should("include", "/home");
   verifyComponent("button1");
+  cy.go("back");
+  cy.waitForAppLoad()
   cy.contains(currentVersion);
 };

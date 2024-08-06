@@ -46,13 +46,15 @@ export const RenderEditor = ({
               },
             });
 
-            setExposedVariable('annotations', getExposedAnnotations(annotations)).then(() => fireEvent('onChange'));
+            setExposedVariable('annotations', getExposedAnnotations(annotations));
+            fireEvent('onChange');
             return annotations;
           });
         }}
         className={`${darkMode ? 'select-search-dark' : 'select-search'}`}
         useCustomStyles={true}
-        useMenuPortal={false}
+        // useMenuPortal={false}
+        useMenuPortal
         styles={selectElementStyles(darkMode, '100%')}
       />
     </div>

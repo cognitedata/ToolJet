@@ -1,70 +1,130 @@
 import HttpClient from '@/_helpers/http-client';
+import { deepClone } from '@/_helpers/utilities/utils.helpers';
+import _ from 'lodash';
 
 const tooljetAdapter = new HttpClient();
 
-function findOne(organizationId, tableName, query = '') {
-  return tooljetAdapter.get(`/tooljet_db/organizations/${organizationId}/proxy/\${${tableName}}?${query}`);
+function findOne(headers, tableId, query = '') {
+  tooljetAdapter.headers = { ...tooljetAdapter.headers, ...headers };
+  return tooljetAdapter.get(`/tooljet-db/proxy/${tableId}?${query}`, headers);
 }
 
 function findAll(organizationId) {
-  return tooljetAdapter.get(`/tooljet_db/organizations/${organizationId}/tables`);
+  return tooljetAdapter.get(`/tooljet-db/organizations/${organizationId}/tables`);
 }
 
-function createTable(organizationId, tableName, columns) {
-  return tooljetAdapter.post(`/tooljet_db/organizations/${organizationId}/table`, {
+function createTable(organizationId, tableName, columns, foreignKeyColumns, checkingValues = false) {
+  return tooljetAdapter.post(`/tooljet-db/organizations/${organizationId}/table`, {
     table_name: tableName,
     columns,
+    ...(checkingValues && { foreign_keys: foreignKeyColumns }),
   });
 }
 
 function viewTable(organizationId, tableName) {
-  return tooljetAdapter.get(`/tooljet_db/organizations/${organizationId}/table/${tableName}`);
+  return tooljetAdapter.get(`/tooljet-db/organizations/${organizationId}/table/${tableName}`);
 }
 
-function createRow(organizationId, tableName, data) {
-  return tooljetAdapter.post(`/tooljet_db/organizations/${organizationId}/proxy/\${${tableName}}`, data);
+function bulkUpload(organizationId, tableName, file) {
+  return tooljetAdapter.post(`/tooljet-db/organizations/${organizationId}/table/${tableName}/bulk-upload`, file);
 }
 
-function createColumn(organizationId, tableName, columnName, dataType, defaultValue) {
-  return tooljetAdapter.post(`/tooljet_db/organizations/${organizationId}/table/${tableName}/column`, {
+function createRow(headers, tableId, data) {
+  return tooljetAdapter.post(`/tooljet-db/proxy/${tableId}`, data, headers);
+}
+
+function createColumn(
+  organizationId,
+  tableId,
+  columnName,
+  dataType,
+  defaultValue,
+  isNotNull,
+  isUniqueConstraint,
+  isCheckSerialType = false,
+  checkingValues = false,
+  foreignKeyArray
+) {
+  return tooljetAdapter.post(`/tooljet-db/organizations/${organizationId}/table/${tableId}/column`, {
     column: {
       column_name: columnName,
       data_type: dataType,
-      default: defaultValue,
+      ...(!isCheckSerialType && { column_default: defaultValue === 'Null' ? null : defaultValue }),
+      constraints_type: {
+        is_not_null: isNotNull,
+        is_unique: isUniqueConstraint,
+      },
     },
+    ...(checkingValues && { foreign_keys: foreignKeyArray }),
   });
 }
 
 function updateTable(organizationId, tableName, columns) {
-  return tooljetAdapter.patch(`/tooljet_db/${organizationId}/perform`, {
+  return tooljetAdapter.patch(`/tooljet-db/${organizationId}/perform`, {
     action: 'update_table',
     table_name: tableName,
     columns,
   });
 }
 
-function renameTable(organizationId, tableName, newTableName) {
-  return tooljetAdapter.patch(`/tooljet_db/organizations/${organizationId}/table/${tableName}`, {
-    action: 'rename_table',
+function renameTable(organizationId, tableName, newTableName, data = []) {
+  let bodyData = deepClone(data);
+  bodyData.forEach((obj) => {
+    ['new_column', 'old_column'].forEach(function (key) {
+      if (obj[key]?.data_type === 'serial') delete obj[key]?.column_default;
+      delete obj[key]?.dataTypeDetails;
+    });
+  });
+  return tooljetAdapter.patch(`/tooljet-db/organizations/${organizationId}/table/${tableName}`, {
     table_name: tableName,
-    new_table_name: newTableName,
+    ...(newTableName !== tableName && { new_table_name: newTableName }),
+    columns: bodyData,
   });
 }
 
-function updateRows(organizationId, tableName, data, query = '') {
-  return tooljetAdapter.patch(`/tooljet_db/organizations/${organizationId}/proxy/\${${tableName}}?${query}`, data);
+function editForeignKey(organizationId, tableName, id, data = []) {
+  return tooljetAdapter.put(`/tooljet-db/organizations/${organizationId}/table/${tableName}/foreignkey`, {
+    foreign_key_id: id,
+    foreign_keys: data,
+  });
 }
 
-function deleteRow(organizationId, tableName, query = '') {
-  return tooljetAdapter.delete(`/tooljet_db/organizations/${organizationId}/proxy/\${${tableName}}?${query}`);
+function createForeignKey(organizationId, tableName, data = []) {
+  return tooljetAdapter.post(`/tooljet-db/organizations/${organizationId}/table/${tableName}/foreignkey`, {
+    foreign_keys: data,
+  });
+}
+
+function deleteForeignKey(organizationId, tableName, id) {
+  return tooljetAdapter.delete(`/tooljet-db/organizations/${organizationId}/table/${tableName}/foreignkey/${id}`);
+}
+
+function updateRows(headers, tableId, data, query = '') {
+  return tooljetAdapter.patch(`/tooljet-db/proxy/${tableId}?${query}`, data, headers);
+}
+
+function updateColumn(organizationId, tableName, columns) {
+  return tooljetAdapter.patch(
+    `/tooljet-db/organizations/${organizationId}/table/${tableName}/column`,
+    columns,
+    organizationId
+  );
+}
+
+function deleteRows(headers, tableId, query = '') {
+  return tooljetAdapter.delete(`/tooljet-db/proxy/${tableId}?${query}`, headers);
 }
 
 function deleteColumn(organizationId, tableName, columnName) {
-  return tooljetAdapter.delete(`/tooljet_db/organizations/${organizationId}/table/${tableName}/column/${columnName}`);
+  return tooljetAdapter.delete(`/tooljet-db/organizations/${organizationId}/table/${tableName}/column/${columnName}`);
 }
 
 function deleteTable(organizationId, tableName) {
-  return tooljetAdapter.delete(`/tooljet_db/organizations/${organizationId}/table/${tableName}`);
+  return tooljetAdapter.delete(`/tooljet-db/organizations/${organizationId}/table/${tableName}`);
+}
+
+function joinTables(organizationId, data) {
+  return tooljetAdapter.post(`tooljet-db/organizations/${organizationId}/join`, data);
 }
 
 export const tooljetDatabaseService = {
@@ -76,8 +136,14 @@ export const tooljetDatabaseService = {
   createColumn,
   updateTable,
   updateRows,
-  deleteRow,
+  deleteRows,
   deleteColumn,
   deleteTable,
   renameTable,
+  bulkUpload,
+  joinTables,
+  updateColumn,
+  editForeignKey,
+  createForeignKey,
+  deleteForeignKey,
 };

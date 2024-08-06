@@ -6,7 +6,7 @@ import { debounce } from 'lodash';
 import SolidIcon from '@/_ui/Icon/SolidIcons';
 
 export const FilterForm = ({ filters, setFilters, index, column = '', operator = '', value = '' }) => {
-  const { columns } = useContext(TooljetDatabaseContext);
+  const { columns, setPageCount } = useContext(TooljetDatabaseContext);
 
   const [filterInputValue, setFilterInputValue] = useState(value);
 
@@ -42,6 +42,7 @@ export const FilterForm = ({ filters, setFilters, index, column = '', operator =
     const prevFilters = { ...filters };
     delete prevFilters[index];
     setFilters(prevFilters);
+    setPageCount(1);
   };
 
   const displayColumns = columns.map(({ accessor }) => ({ value: accessor, label: accessor }));
@@ -57,7 +58,6 @@ export const FilterForm = ({ filters, setFilters, index, column = '', operator =
               value={column}
               options={displayColumns}
               onChange={handleColumnChange}
-              customWrap={true}
             />
           </div>
           <div className="col-4 select-operation-field" data-cy="select-operation-field">
@@ -67,14 +67,13 @@ export const FilterForm = ({ filters, setFilters, index, column = '', operator =
               value={operator}
               options={operators}
               onChange={handleOperatorChange}
-              customWrap={true}
             />
           </div>
-          <div className="col-4 tj-app-input">
+          <div className="col-4">
             <input
               value={filterInputValue}
               type="text"
-              className="form-control"
+              className="form-control css-zz6spl-container"
               data-cy="value-input-field"
               placeholder="Value"
               onChange={(event) => {

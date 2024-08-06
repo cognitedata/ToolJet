@@ -5,7 +5,7 @@ import { LeftSidebarInspector } from './SidebarInspector';
 import { LeftSidebarDataSources } from './SidebarDatasources';
 import { DarkModeToggle } from '../../_components/DarkModeToggle';
 import useRouter from '../../_hooks/use-router';
-import { LeftSidebarDebugger } from './SidebarDebugger';
+import { LeftSidebarDebugger } from './SidebarDebugger/SidebarDebugger';
 import { LeftSidebarComment } from './SidebarComment';
 import LeftSidebarPageSelector from './SidebarPageSelector';
 import { ConfirmDialog } from '@/_components';
@@ -14,24 +14,23 @@ import { LeftSidebarItem } from './SidebarItem';
 import Popover from '@/_ui/Popover';
 import { usePanelHeight } from '@/_stores/queryPanelStore';
 import { useAppVersionStore } from '@/_stores/appVersionStore';
+import { useEditorStore } from '@/_stores/editorStore';
 import { useDataSources } from '@/_stores/dataSourcesStore';
 import { shallow } from 'zustand/shallow';
+import useDebugger from './SidebarDebugger/useDebugger';
+import { GlobalSettings } from '../Header/GlobalSettings';
+import cx from 'classnames';
+import { deepClone } from '@/_helpers/utilities/utils.helpers';
 
 export const LeftSidebar = forwardRef((props, ref) => {
   const router = useRouter();
   const {
     appId,
     switchDarkMode,
-    showComments,
     darkMode = false,
-    components,
-    toggleComments,
     dataSourcesChanged,
     globalDataSourcesChanged,
     dataQueriesChanged,
-    errorLogs: errors,
-    debuggerActions,
-    currentState,
     appDefinition,
     setSelectedComponent,
     removeComponent,
@@ -47,17 +46,21 @@ export const LeftSidebar = forwardRef((props, ref) => {
     updatePageHandle,
     showHideViewerNavigationControls,
     updateOnSortingPages,
-    updateOnPageLoadEvents,
     apps,
     clonePage,
     setEditorMarginLeft,
+    globalSettingsChanged,
+    toggleAppMaintenance,
+    app,
+    disableEnablePage,
+    isMaintenanceOn,
   } = props;
 
   const dataSources = useDataSources();
   const prevSelectedSidebarItem = localStorage.getItem('selectedSidebarItem');
   const queryPanelHeight = usePanelHeight();
   const [selectedSidebarItem, setSelectedSidebarItem] = useState(
-    dataSources?.length === 0 && prevSelectedSidebarItem === 'database' ? 'inspect' : prevSelectedSidebarItem
+    dataSources?.length === 0 && prevSelectedSidebarItem === 'datasource' ? 'inspect' : prevSelectedSidebarItem
   );
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showDataSourceManagerModal, toggleDataSourceManagerModal] = useState(false);
@@ -68,79 +71,20 @@ export const LeftSidebar = forwardRef((props, ref) => {
     }),
     shallow
   );
+  const { showComments, appMode } = useEditorStore(
+    (state) => ({
+      showComments: state?.showComments,
+      appMode: state?.appMode,
+    }),
+    shallow
+  );
   const [pinned, setPinned] = useState(!!localStorage.getItem('selectedSidebarItem'));
-  const [errorLogs, setErrorLogs] = useState([]);
-  const [errorHistory, setErrorHistory] = useState({ appLevel: [], pageLevel: [] });
-  const [unReadErrorCount, setUnReadErrorCount] = useState({ read: 0, unread: 0 });
 
+  const { errorLogs, clearErrorLogs, unReadErrorCount, allLog } = useDebugger({
+    currentPageId,
+    isDebuggerOpen: !!selectedSidebarItem,
+  });
   const sideBarBtnRefs = useRef({});
-
-  const open = !!selectedSidebarItem;
-
-  const clearErrorLogs = () => {
-    setUnReadErrorCount({ read: 0, unread: 0 });
-
-    setErrorLogs([]);
-    setErrorHistory({ appLevel: [], pageLevel: [] });
-  };
-
-  useEffect(() => {
-    if (currentPageId) {
-      const olderPageErrorFromHistory = errorHistory.pageLevel[currentPageId] ?? [];
-      const olderAppErrorFromHistory = errorHistory.appLevel ?? [];
-      setErrorLogs(() => [...olderPageErrorFromHistory, ...olderAppErrorFromHistory]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPageId]);
-
-  useEffect(() => {
-    const newError = _.flow([
-      Object.entries,
-      // eslint-disable-next-line no-unused-vars
-      (arr) => arr.filter(([key, value]) => value.data?.status),
-      Object.fromEntries,
-    ])(errors);
-
-    const newErrorLogs = debuggerActions.generateErrorLogs(newError);
-    const newPageLevelErrorLogs = newErrorLogs.filter((error) => error.strace === 'page_level');
-    const newAppLevelErrorLogs = newErrorLogs.filter((error) => error.strace === 'app_level');
-    if (newErrorLogs) {
-      setErrorLogs((prevErrors) => {
-        const copy = JSON.parse(JSON.stringify(prevErrors));
-
-        return [...newAppLevelErrorLogs, ...newPageLevelErrorLogs, ...copy];
-      });
-
-      setErrorHistory((prevErrors) => {
-        const copy = JSON.parse(JSON.stringify(prevErrors));
-
-        return {
-          appLevel: [...newAppLevelErrorLogs, ...copy.appLevel],
-          pageLevel: {
-            [currentPageId]: [...newPageLevelErrorLogs, ...(copy.pageLevel[currentPageId] ?? [])],
-          },
-        };
-      });
-    }
-    debuggerActions.flush();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify({ errors })]);
-
-  useEffect(() => {
-    if (open) {
-      // eslint-disable-next-line no-unused-vars
-      setUnReadErrorCount((prev) => ({ read: errorLogs.length, unread: 0 }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  useEffect(() => {
-    const unReadErrors = errorLogs.length - unReadErrorCount.read;
-    setUnReadErrorCount((prev) => {
-      return { ...prev, unread: unReadErrors };
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errorLogs.length]);
 
   useEffect(() => {
     setPopoverContentHeight(((window.innerHeight - queryPanelHeight - 45) / window.innerHeight) * 100);
@@ -193,86 +137,102 @@ export const LeftSidebar = forwardRef((props, ref) => {
     sideBarBtnRefs.current[page] = ref;
   };
 
-  const SELECTED_ITEMS = {
-    page: (
-      <LeftSidebarPageSelector
-        darkMode={darkMode}
-        selectedSidebarItem={selectedSidebarItem}
-        appDefinition={appDefinition}
-        currentPageId={currentPageId}
-        addNewPage={addNewPage}
-        switchPage={switchPage}
-        deletePage={deletePage}
-        renamePage={renamePage}
-        hidePage={hidePage}
-        unHidePage={unHidePage}
-        updateHomePage={updateHomePage}
-        updatePageHandle={updatePageHandle}
-        clonePage={clonePage}
-        pages={Object.entries(appDefinition.pages).map(([id, page]) => ({ id, ...page })) || []}
-        homePageId={appDefinition.homePageId}
-        showHideViewerNavigationControls={showHideViewerNavigationControls}
-        updateOnSortingPages={updateOnSortingPages}
-        updateOnPageLoadEvents={updateOnPageLoadEvents}
-        currentState={currentState}
-        apps={apps}
-        popoverContentHeight={popoverContentHeight}
-        setPinned={handlePin}
-        pinned={pinned}
-      />
-    ),
-    inspect: (
-      <LeftSidebarInspector
-        darkMode={darkMode}
-        selectedSidebarItem={selectedSidebarItem}
-        currentState={currentState}
-        appDefinition={appDefinition}
-        setSelectedComponent={setSelectedComponent}
-        removeComponent={removeComponent}
-        runQuery={runQuery}
-        popoverContentHeight={popoverContentHeight}
-        setPinned={handlePin}
-        pinned={pinned}
-      />
-    ),
-    database: (
-      <LeftSidebarDataSources
-        darkMode={darkMode}
-        appId={appId}
-        dataSourcesChanged={dataSourcesChanged}
-        globalDataSourcesChanged={globalDataSourcesChanged}
-        dataQueriesChanged={dataQueriesChanged}
-        toggleDataSourceManagerModal={toggleDataSourceManagerModal}
-        showDataSourceManagerModal={showDataSourceManagerModal}
-        isVersionReleased={isVersionReleased}
-        onDeleteofAllDataSources={() => {
-          handleSelectedSidebarItem(null);
-          handlePin(false);
-          delete sideBarBtnRefs.current['database'];
-        }}
-        setPinned={handlePin}
-        pinned={pinned}
-      />
-    ),
-    debugger: (
-      <LeftSidebarDebugger
-        darkMode={darkMode}
-        selectedSidebarItem={selectedSidebarItem}
-        components={components}
-        errors={errorLogs}
-        debuggerActions={debuggerActions}
-        currentPageId={currentPageId}
-        popoverContentHeight={popoverContentHeight}
-        clearErrorLogs={clearErrorLogs}
-        setPinned={handlePin}
-        pinned={pinned}
-        setEditorMarginLeft={setEditorMarginLeft}
-      />
-    ),
+  const backgroundFxQuery = appDefinition?.globalSettings?.backgroundFxQuery;
+
+  const renderPopoverContent = () => {
+    if (selectedSidebarItem === null) return null;
+    switch (selectedSidebarItem) {
+      case 'page':
+        return (
+          <LeftSidebarPageSelector
+            darkMode={darkMode}
+            selectedSidebarItem={selectedSidebarItem}
+            appDefinition={appDefinition}
+            currentPageId={currentPageId}
+            addNewPage={addNewPage}
+            switchPage={switchPage}
+            deletePage={deletePage}
+            renamePage={renamePage}
+            hidePage={hidePage}
+            unHidePage={unHidePage}
+            disableEnablePage={disableEnablePage}
+            updateHomePage={updateHomePage}
+            updatePageHandle={updatePageHandle}
+            clonePage={clonePage}
+            pages={
+              Object.entries(deepClone(appDefinition).pages)
+                .map(([id, page]) => ({ id, ...page }))
+                .sort((a, b) => a.index - b.index) || []
+            }
+            homePageId={appDefinition.homePageId}
+            showHideViewerNavigationControls={showHideViewerNavigationControls}
+            updateOnSortingPages={updateOnSortingPages}
+            apps={apps}
+            setPinned={handlePin}
+            pinned={pinned}
+          />
+        );
+      case 'inspect':
+        return (
+          <LeftSidebarInspector
+            darkMode={darkMode}
+            selectedSidebarItem={selectedSidebarItem}
+            appDefinition={appDefinition}
+            setSelectedComponent={setSelectedComponent}
+            removeComponent={removeComponent}
+            runQuery={runQuery}
+            popoverContentHeight={popoverContentHeight}
+            setPinned={handlePin}
+            pinned={pinned}
+          />
+        );
+      case 'datasource':
+        return (
+          <LeftSidebarDataSources
+            darkMode={darkMode}
+            appId={appId}
+            dataSourcesChanged={dataSourcesChanged}
+            globalDataSourcesChanged={globalDataSourcesChanged}
+            dataQueriesChanged={dataQueriesChanged}
+            toggleDataSourceManagerModal={toggleDataSourceManagerModal}
+            showDataSourceManagerModal={showDataSourceManagerModal}
+            onDeleteofAllDataSources={() => {
+              handleSelectedSidebarItem(null);
+              handlePin(false);
+              delete sideBarBtnRefs.current['datasource'];
+            }}
+            setPinned={handlePin}
+            pinned={pinned}
+          />
+        );
+      case 'debugger':
+        return (
+          <LeftSidebarDebugger
+            darkMode={darkMode}
+            errors={errorLogs}
+            clearErrorLogs={clearErrorLogs}
+            setPinned={handlePin}
+            pinned={pinned}
+            allLog={allLog}
+          />
+        );
+      case 'settings':
+        return (
+          <GlobalSettings
+            globalSettingsChanged={globalSettingsChanged}
+            globalSettings={appDefinition.globalSettings}
+            darkMode={darkMode}
+            toggleAppMaintenance={toggleAppMaintenance}
+            isMaintenanceOn={isMaintenanceOn}
+            app={app}
+            backgroundFxQuery={backgroundFxQuery}
+          />
+        );
+    }
   };
 
   return (
-    <div className="left-sidebar" data-cy="left-sidebar-inspector">
+    <div className={cx('left-sidebar', { 'dark-theme theme-dark': darkMode })} data-cy="left-sidebar-inspector">
       <LeftSidebarItem
         selectedSidebarItem={selectedSidebarItem}
         onClick={() => handleSelectedSidebarItem('page')}
@@ -290,35 +250,49 @@ export const LeftSidebar = forwardRef((props, ref) => {
         tip="Inspector"
         ref={setSideBarBtnRefs('inspect')}
       />
+
+      <LeftSidebarItem
+        icon="debugger"
+        selectedSidebarItem={selectedSidebarItem}
+        // eslint-disable-next-line no-unused-vars
+        onClick={(e) => handleSelectedSidebarItem('debugger')}
+        className={`left-sidebar-item  left-sidebar-layout`}
+        badge={true}
+        count={unReadErrorCount.unread}
+        tip="Debugger"
+        ref={setSideBarBtnRefs('debugger')}
+      />
+      <LeftSidebarItem
+        icon="settings"
+        selectedSidebarItem={selectedSidebarItem}
+        // eslint-disable-next-line no-unused-vars
+        onClick={(e) => handleSelectedSidebarItem('settings')}
+        className={`left-sidebar-item  left-sidebar-layout`}
+        badge={true}
+        tip="Settings"
+        ref={setSideBarBtnRefs('settings')}
+      />
+
       {dataSources?.length > 0 && (
         <LeftSidebarItem
           selectedSidebarItem={selectedSidebarItem}
-          onClick={() => handleSelectedSidebarItem('database')}
-          icon="database"
+          onClick={() => handleSelectedSidebarItem('datasource')}
+          icon="datasource"
           className={`left-sidebar-item left-sidebar-layout sidebar-datasources`}
           tip="Sources"
-          ref={setSideBarBtnRefs('database')}
+          ref={setSideBarBtnRefs('datasource')}
         />
       )}
+
       <Popover
         onInteractOutside={handleInteractOutside}
         open={pinned || !!selectedSidebarItem}
-        popoverContentClassName="p-0 sidebar-h-100-popover"
+        popoverContentClassName={`p-0 sidebar-h-100-popover ${selectedSidebarItem}`}
         side="right"
-        popoverContent={SELECTED_ITEMS[selectedSidebarItem]}
+        popoverContent={renderPopoverContent()}
         popoverContentHeight={popoverContentHeight}
       />
 
-      {config.COMMENT_FEATURE_ENABLE && (
-        <div className={`${isVersionReleased && 'disabled'}`}>
-          <LeftSidebarComment
-            selectedSidebarItem={showComments ? 'comments' : ''}
-            toggleComments={toggleComments}
-            currentPageId={currentPageId}
-            ref={setSideBarBtnRefs('comments')}
-          />
-        </div>
-      )}
       <ConfirmDialog
         show={showLeaveDialog}
         message={'The unsaved changes will be lost if you leave the editor, do you want to leave?'}
@@ -327,22 +301,22 @@ export const LeftSidebar = forwardRef((props, ref) => {
         darkMode={darkMode}
       />
       <div className="left-sidebar-stack-bottom">
-        <LeftSidebarItem
-          icon="debugger"
-          selectedSidebarItem={selectedSidebarItem}
-          // eslint-disable-next-line no-unused-vars
-          onClick={(e) => handleSelectedSidebarItem('debugger')}
-          className={`left-sidebar-item  left-sidebar-layout`}
-          badge={true}
-          count={unReadErrorCount.unread}
-          tip="Debugger"
-          ref={setSideBarBtnRefs('debugger')}
-        />
+        <div className="">
+          {config.COMMENT_FEATURE_ENABLE && (
+            <div
+              className={`${isVersionReleased && 'disabled'}`}
+              style={{ maxHeight: '32px', maxWidth: '32px', marginBottom: '16px' }}
+            >
+              <LeftSidebarComment
+                selectedSidebarItem={showComments ? 'comments' : ''}
+                currentPageId={currentPageId}
+                ref={setSideBarBtnRefs('comments')}
+              />
+            </div>
+          )}
 
-        <div className="left-sidebar-item no-border">
           <DarkModeToggle switchDarkMode={switchDarkMode} darkMode={darkMode} tooltipPlacement="right" />
         </div>
-        {/* <LeftSidebarItem icon='support' className='left-sidebar-item' /> */}
       </div>
     </div>
   );

@@ -28,6 +28,7 @@ const allowedCalendarViews = ['month', 'week', 'day'];
 
 export const Calendar = function ({
   id,
+  component,
   height,
   properties,
   styles,
@@ -80,7 +81,7 @@ export const Calendar = function ({
       action,
     };
 
-    fireEvent('onCalendarSlotSelect', { selectedSlots });
+    fireEvent('onCalendarSlotSelect', { component, selectedSlots });
   };
 
   function popoverClosed() {
@@ -152,7 +153,7 @@ export const Calendar = function ({
         min={startTime}
         max={endTime}
         onSelectEvent={(calendarEvent, e) => {
-          fireEvent('onCalendarEventSelect', { calendarEvent });
+          fireEvent('onCalendarEventSelect', { component, calendarEvent });
           if (properties.showPopOverOnEventClick)
             setEventPopoverOptions({
               ...eventPopoverOptions,
@@ -187,6 +188,7 @@ export const Calendar = function ({
         containerProps={containerProps}
         removeComponent={removeComponent}
         popoverClosed={popoverClosed}
+        component={component}
       />
     </div>
   );

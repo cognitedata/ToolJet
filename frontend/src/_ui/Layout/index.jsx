@@ -9,12 +9,49 @@ import Header from '../Header';
 import { authenticationService } from '@/_services';
 import SolidIcon from '../Icon/SolidIcons';
 import { getPrivateRoute } from '@/_helpers/routes';
+import { ConfirmDialog } from '@/_components';
+import useGlobalDatasourceUnsavedChanges from '@/_hooks/useGlobalDatasourceUnsavedChanges';
+import Settings from '@/_components/Settings';
+import { retrieveWhiteLabelLogo, fetchWhiteLabelDetails } from '@white-label/whiteLabelling';
 
-function Layout({ children, switchDarkMode, darkMode }) {
+function Layout({
+  children,
+  switchDarkMode,
+  darkMode,
+  enableCollapsibleSidebar = false,
+  collapseSidebar = false,
+  toggleCollapsibleSidebar = () => {},
+}) {
   const router = useRouter();
   const currentUserValue = authenticationService.currentSessionValue;
   const admin = currentUserValue?.admin;
   const marketplaceEnabled = admin && window.public_config?.ENABLE_MARKETPLACE_FEATURE == 'true';
+  fetchWhiteLabelDetails();
+  const whiteLabelLogo = retrieveWhiteLabelLogo();
+
+  const {
+    checkForUnsavedChanges,
+    handleDiscardChanges,
+    handleSaveChanges,
+    handleContinueEditing,
+    unSavedModalVisible,
+    nextRoute,
+  } = useGlobalDatasourceUnsavedChanges();
+
+  const canAnyGroupPerformAction = (action, permissions) => {
+    if (!permissions) {
+      return false;
+    }
+
+    return permissions.some((p) => p[action]);
+  };
+
+  const canCreateVariableOrConstant = () => {
+    return canAnyGroupPerformAction(
+      'org_environment_variable_create',
+      authenticationService.currentSessionValue.group_permissions
+    );
+  };
 
   return (
     <div className="row m-auto">
@@ -22,16 +59,20 @@ function Layout({ children, switchDarkMode, darkMode }) {
         <aside className="left-sidebar h-100 position-fixed">
           <div className="tj-leftsidebar-icon-wrap">
             <div className="application-brand" data-cy={`home-page-logo`}>
-              <Link to={getPrivateRoute('dashboard')}>
-                <Logo />
+              <Link
+                to={getPrivateRoute('dashboard')}
+                onClick={(event) => checkForUnsavedChanges(getPrivateRoute('dashboard'), event)}
+              >
+                {whiteLabelLogo ? <img src={whiteLabelLogo} /> : <Logo />}
               </Link>
             </div>
             <div>
               <ul className="sidebar-inner nav nav-vertical">
                 <li className="text-center cursor-pointer">
-                  <ToolTip message="Dashboard" placement="right">
+                  <ToolTip message="Apps" placement="right">
                     <Link
                       to="/"
+                      onClick={(event) => checkForUnsavedChanges(getPrivateRoute('dashboard'), event)}
                       className={`tj-leftsidebar-icon-items  ${
                         (router.pathname === '/:workspaceId' || router.pathname === getPrivateRoute('dashboard')) &&
                         `current-seleted-route`
@@ -43,9 +84,7 @@ function Layout({ children, switchDarkMode, darkMode }) {
                         fill={
                           router.pathname === '/:workspaceId' || router.pathname === getPrivateRoute('dashboard')
                             ? '#3E63DD'
-                            : darkMode
-                            ? '#4C5155'
-                            : '#C1C8CD'
+                            : 'var(--slate8)'
                         }
                       />
                     </Link>
@@ -53,9 +92,10 @@ function Layout({ children, switchDarkMode, darkMode }) {
                 </li>
                 {window.public_config?.ENABLE_TOOLJET_DB == 'true' && admin && (
                   <li className="text-center  cursor-pointer" data-cy={`database-icon`}>
-                    <ToolTip message="Database" placement="right">
+                    <ToolTip message="ToolJet Database" placement="right">
                       <Link
                         to={getPrivateRoute('database')}
+                        onClick={(event) => checkForUnsavedChanges(getPrivateRoute('database'), event)}
                         className={`tj-leftsidebar-icon-items  ${
                           router.pathname === getPrivateRoute('database') && `current-seleted-route`
                         }`}
@@ -66,9 +106,7 @@ function Layout({ children, switchDarkMode, darkMode }) {
                           fill={
                             router.pathname === getPrivateRoute('database') && `current-seleted-route`
                               ? '#3E63DD'
-                              : darkMode
-                              ? '#4C5155'
-                              : '#C1C8CD'
+                              : 'var(--slate8)'
                           }
                         />
                       </Link>
@@ -79,94 +117,86 @@ function Layout({ children, switchDarkMode, darkMode }) {
                 {/* DATASOURCES */}
                 {admin && (
                   <li className="text-center cursor-pointer">
-                    <ToolTip message="Global Datasources" placement="right">
+                    <ToolTip message="Data sources" placement="right">
                       <Link
-                        to={getPrivateRoute('global_datasources')}
+                        to={getPrivateRoute('data_sources')}
+                        onClick={(event) => checkForUnsavedChanges(getPrivateRoute('data_sources'), event)}
                         className={`tj-leftsidebar-icon-items  ${
-                          router.pathname === getPrivateRoute('global_datasources') && `current-seleted-route`
+                          router.pathname === getPrivateRoute('data_sources') && `current-seleted-route`
                         }`}
                         data-cy="icon-global-datasources"
                       >
                         <SolidIcon
                           name="datasource"
-                          fill={
-                            router.pathname === getPrivateRoute('global_datasources')
-                              ? '#3E63DD'
-                              : darkMode
-                              ? '#4C5155'
-                              : '#C1C8CD'
-                          }
+                          fill={router.pathname === getPrivateRoute('data_sources') ? '#3E63DD' : 'var(--slate8)'}
                         />
                       </Link>
                     </ToolTip>
                   </li>
                 )}
-                {marketplaceEnabled && (
-                  <li className="text-center d-flex flex-column">
-                    <ToolTip message="Marketplace (Beta)" placement="right">
+                {canCreateVariableOrConstant() && (
+                  <li className="text-center cursor-pointer">
+                    <ToolTip message="Workspace constants" placement="right">
                       <Link
-                        to="/integrations"
+                        to={getPrivateRoute('workspace_constants')}
+                        onClick={(event) => checkForUnsavedChanges(getPrivateRoute('workspace_constants'), event)}
                         className={`tj-leftsidebar-icon-items  ${
-                          router.pathname === '/integrations' && `current-seleted-route`
+                          router.pathname === getPrivateRoute('workspace_constants') && `current-seleted-route`
                         }`}
-                        data-cy="icon-marketplace"
+                        data-cy="icon-workspace-constants"
                       >
                         <SolidIcon
-                          name="marketplace"
-                          fill={router.pathname === '/integrations' ? '#3E63DD' : darkMode ? '#4C5155' : '#C1C8CD'}
+                          name="workspaceconstants"
+                          fill={
+                            router.pathname === getPrivateRoute('workspace_constants') ? '#3E63DD' : 'var(--slate8)'
+                          }
+                          width={25}
+                          viewBox={'0 0 20 20'}
                         />
                       </Link>
                     </ToolTip>
                   </li>
                 )}
-                <li className="text-center cursor-pointer">
-                  <ToolTip message="Workspace settings" placement="right">
-                    <Link
-                      to={getPrivateRoute('workspace_settings')}
-                      className={`tj-leftsidebar-icon-items  ${
-                        router.pathname === getPrivateRoute('workspace_settings') && `current-seleted-route`
-                      }`}
-                      data-cy="icon-workspace-settings"
-                    >
-                      <SolidIcon
-                        name="setting"
-                        fill={
-                          router.pathname === getPrivateRoute('workspace_settings')
-                            ? '#3E63DD'
-                            : darkMode
-                            ? '#4C5155'
-                            : '#C1C8CD'
-                        }
-                      />
-                    </Link>
-                  </ToolTip>
-                </li>
 
                 <li className="tj-leftsidebar-icon-items-bottom text-center">
                   <NotificationCenter darkMode={darkMode} />
-                  <ToolTip message="Mode" placement="right">
-                    <div
-                      className="cursor-pointer  tj-leftsidebar-icon-items"
+                  <ToolTip delay={{ show: 0, hide: 0 }} message="Mode" placement="right">
+                    <Link
+                      className="cursor-pointer tj-leftsidebar-icon-items"
                       onClick={() => switchDarkMode(!darkMode)}
                       data-cy="mode-switch-button"
                     >
-                      <SolidIcon name={darkMode ? 'lightmode' : 'darkmode'} fill={darkMode ? '#4C5155' : '#C1C8CD'} />
-                    </div>
+                      <SolidIcon name={darkMode ? 'lightmode' : 'darkmode'} fill="var(--slate8)" />
+                    </Link>
                   </ToolTip>
-
-                  <ToolTip message="Profile" placement="right">
-                    <Profile switchDarkMode={switchDarkMode} darkMode={darkMode} />
-                  </ToolTip>
+                  <Settings darkMode={darkMode} checkForUnsavedChanges={checkForUnsavedChanges} />
                 </li>
               </ul>
             </div>
           </div>
         </aside>
       </div>
-      <div style={{ paddingLeft: 56, paddingRight: 0 }} className="col">
-        <Header />
+      <div style={{ paddingLeft: 48, paddingRight: 0 }} className="col">
+        <Header
+          enableCollapsibleSidebar={enableCollapsibleSidebar}
+          collapseSidebar={collapseSidebar}
+          toggleCollapsibleSidebar={toggleCollapsibleSidebar}
+        />
         <div style={{ paddingTop: 64 }}>{children}</div>
       </div>
+      <ConfirmDialog
+        title={'Unsaved Changes'}
+        show={unSavedModalVisible}
+        message={'Datasource has unsaved changes. Are you sure you want to discard them?'}
+        onConfirm={() => handleDiscardChanges(nextRoute)}
+        onCancel={handleSaveChanges}
+        confirmButtonText={'Discard'}
+        cancelButtonText={'Save changes'}
+        confirmButtonType="dangerPrimary"
+        cancelButtonType="tertiary"
+        backdropClassName="datasource-selection-confirm-backdrop"
+        onCloseIconClick={handleContinueEditing}
+      />
     </div>
   );
 }

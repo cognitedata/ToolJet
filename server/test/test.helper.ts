@@ -8,7 +8,7 @@ import { User } from 'src/entities/user.entity';
 import { App } from 'src/entities/app.entity';
 import { File } from 'src/entities/file.entity';
 import { Plugin } from 'src/entities/plugin.entity';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe, VersioningType, VERSION_NEUTRAL } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from 'src/app.module';
 import { AppVersion } from 'src/entities/app_version.entity';
@@ -22,7 +22,7 @@ import { ThreadRepository } from 'src/repositories/thread.repository';
 import { GroupPermission } from 'src/entities/group_permission.entity';
 import { UserGroupPermission } from 'src/entities/user_group_permission.entity';
 import { AppGroupPermission } from 'src/entities/app_group_permission.entity';
-import { AllExceptionsFilter } from 'src/all-exceptions-filter';
+import { AllExceptionsFilter } from 'src/filters/all-exceptions-filter';
 import { Logger } from 'nestjs-pino';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { AppsModule } from 'src/modules/apps/apps.module';
@@ -36,6 +36,7 @@ import { AppEnvironment } from 'src/entities/app_environments.entity';
 import { defaultAppEnvironments } from 'src/helpers/utils.helper';
 import { DataSourceOptions } from 'src/entities/data_source_options.entity';
 import * as cookieParser from 'cookie-parser';
+import { InternalTable } from '@entities/internal_table.entity';
 
 export async function createNestAppInstance(): Promise<INestApplication> {
   let app: INestApplication;
@@ -51,6 +52,10 @@ export async function createNestAppInstance(): Promise<INestApplication> {
   app.useGlobalFilters(new AllExceptionsFilter(moduleRef.get(Logger)));
   app.useWebSocketAdapter(new WsAdapter(app));
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: VERSION_NEUTRAL,
+  });
   await app.init();
 
   return app;
@@ -99,18 +104,36 @@ export function authHeaderForUser(user: User, organizationId?: string, isPasswor
 }
 
 export async function clearDB() {
-  const entities = getConnection().entityMetadatas;
-  for (const entity of entities) {
-    const repository = getConnection().getRepository(entity.name);
+  if (process.env.NODE_ENV !== 'test') return;
+  if (process.env.ENABLE_TOOLJET_DB === 'true') await dropTooljetDbTables();
+
+  const connection = getConnection();
+  for (const entity of connection.entityMetadatas) {
+    const repository = connection.getRepository(entity.name);
     await repository.query(`TRUNCATE ${entity.tableName} RESTART IDENTITY CASCADE;`);
   }
 }
 
-export async function createApplication(nestApp, { name, user, isPublic, slug }: any) {
+async function dropTooljetDbTables() {
+  const connection = getConnection();
+  const tooljetDbConnection = getConnection('tooljetDb');
+
+  const internalTables = (await connection.manager.find(InternalTable, { select: ['id'] })) as InternalTable[];
+
+  for (const table of internalTables) {
+    await tooljetDbConnection.query(`DROP TABLE IF EXISTS "${table.id}" CASCADE`);
+  }
+}
+
+export async function createApplication(nestApp, { name, user, isPublic, slug }: any, shouldCreateEnvs = true) {
   let appRepository: Repository<App>;
   appRepository = nestApp.get('AppRepository');
 
   user = user || (await (await createUser(nestApp, {})).user);
+
+  if (shouldCreateEnvs) {
+    await createAppEnvironments(nestApp, user.organizationId);
+  }
 
   const newApp = await appRepository.save(
     appRepository.create({
@@ -136,17 +159,49 @@ export async function importAppFromTemplates(nestApp, user, identifier) {
   return service.perform(user, identifier);
 }
 
-export async function createApplicationVersion(nestApp, application, { name = 'v0', definition = null } = {}) {
+export async function createApplicationVersion(
+  nestApp,
+  application,
+  { name = 'v0', definition = null, currentEnvironmentId = null } = {}
+) {
   let appVersionsRepository: Repository<AppVersion>;
+  let appEnvironmentsRepository: Repository<AppEnvironment>;
   appVersionsRepository = nestApp.get('AppVersionRepository');
+  appEnvironmentsRepository = nestApp.get('AppEnvironmentRepository');
+
+  const environments = await appEnvironmentsRepository.find({
+    where: {
+      organizationId: application.organizationId,
+    },
+  });
+
+  const envId = currentEnvironmentId
+    ? currentEnvironmentId
+    : defaultAppEnvironments.length > 1
+    ? environments.find((env) => env.priority === 1)?.id
+    : environments[0].id;
 
   return await appVersionsRepository.save(
     appVersionsRepository.create({
       app: application,
       name,
+      currentEnvironmentId: envId,
       definition,
     })
   );
+}
+export async function getAllEnvironments(nestApp, organizationId): Promise<AppEnvironment[]> {
+  let appEnvironmentRepository: Repository<AppEnvironment>;
+  appEnvironmentRepository = nestApp.get('AppEnvironmentRepository');
+
+  return await appEnvironmentRepository.find({
+    where: {
+      organizationId,
+    },
+    order: {
+      priority: 'ASC',
+    },
+  });
 }
 
 export async function createAppEnvironments(nestApp, organizationId): Promise<AppEnvironment[]> {
@@ -159,6 +214,7 @@ export async function createAppEnvironments(nestApp, organizationId): Promise<Ap
         appEnvironmentRepository.create({
           organizationId,
           name: env.name,
+          priority: env.priority,
           isDefault: env.isDefault,
         })
       );
@@ -353,6 +409,8 @@ export async function maybeCreateDefaultGroupPermissions(nestApp, organizationId
         orgEnvironmentVariableCreate: group == 'admin',
         orgEnvironmentVariableUpdate: group == 'admin',
         orgEnvironmentVariableDelete: group == 'admin',
+        orgEnvironmentConstantCreate: group == 'admin',
+        orgEnvironmentConstantDelete: group == 'admin',
         folderUpdate: group == 'admin',
         folderDelete: group == 'admin',
       });
@@ -665,14 +723,18 @@ export const generateAppDefaults = async (
   user: any,
   { isQueryNeeded = true, isDataSourceNeeded = true, isAppPublic = false, dsKind = 'restapi', dsOptions = [{}] }
 ) => {
-  const application = await createApplication(app, {
-    name: 'name',
-    user: user,
-    isPublic: isAppPublic,
-  });
+  const application = await createApplication(
+    app,
+    {
+      name: 'name',
+      user: user,
+      isPublic: isAppPublic,
+    },
+    false
+  );
 
-  const appVersion = await createApplicationVersion(app, application);
   const appEnvironments = await createAppEnvironments(app, user.organizationId);
+  const appVersion = await createApplicationVersion(app, application);
 
   let dataQuery: any;
   let dataSource: any;

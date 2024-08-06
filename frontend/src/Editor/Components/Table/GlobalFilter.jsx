@@ -1,41 +1,61 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import SolidIcon from '@/_ui/Icon/SolidIcons';
+import { debounce } from 'lodash';
+
 // Table Search
 export const GlobalFilter = ({
   globalFilter,
-  useAsyncDebounce,
   setGlobalFilter,
   onComponentOptionChanged,
   component,
-  onEvent,
+  // eslint-disable-next-line no-unused-vars
   darkMode,
+  setExposedVariable,
+  fireEvent,
 }) => {
   const [value, setValue] = React.useState(globalFilter);
-  const onChange = useAsyncDebounce((filterValue) => {
-    setValue(filterValue);
+  const onChange = (filterValue) => {
     setGlobalFilter(filterValue || undefined);
-    onComponentOptionChanged(component, 'searchText', filterValue).then(() => {
-      onEvent('onSearch', { component, data: {} });
-    });
-  }, 500);
+    setExposedVariable('searchText', filterValue);
+    fireEvent('onSearch');
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedChange = useMemo(() => debounce(onChange, 500), []);
 
   return (
-    <div className="ms-2 d-flex border px-2 mx-1 btn-light align-items-center" style={{ padding: '0.25rem 0' }}>
-      <img
-        src="assets/images/icons/search.svg"
-        alt="search icon"
-        style={{ width: '15px', height: '15px', marginRight: '0.25rem' }}
-      />
-      <input
-        type="text"
-        className={`global-search-field btn-light align-self-center ${darkMode && 'dark-theme-placeholder'}`}
-        defaultValue={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Search"
-        data-cy="search-input-field"
-        style={{
-          border: '0',
-        }}
-      />
+    <div
+      className="d-flex align-items-center table-global-search"
+      style={{ padding: '0.4rem 0.6rem', borderRadius: '6px' }}
+    >
+      <div className="d-flex">
+        <SolidIcon name="search" width="16" height="16" fill={'var(--icons-default)'} />
+        <input
+          type="text"
+          className={`align-self-center bg-transparent tj-text tj-text-sm mx-lg-1`}
+          value={value || ''}
+          onChange={(e) => {
+            setValue(e.target.value);
+            debouncedChange(e.target.value);
+          }}
+          placeholder="Search"
+          data-cy="search-input-field"
+          style={{
+            border: '0',
+          }}
+        />
+        <div
+          className={`d-flex table-clear-icon align-items-center ${globalFilter ? 'visible' : 'invisible'}`}
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            setGlobalFilter(undefined);
+            setValue('');
+            debouncedChange('');
+            onComponentOptionChanged(component, 'searchText', '');
+          }}
+        >
+          <SolidIcon name="removerectangle" width="16" height="16" fill={'var(--icons-default)'} />
+        </div>
+      </div>
     </div>
   );
 };

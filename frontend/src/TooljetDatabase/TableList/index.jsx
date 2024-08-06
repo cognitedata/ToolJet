@@ -10,8 +10,16 @@ import Search from '../Search';
 import SolidIcon from '@/_ui/Icon/SolidIcons';
 
 const List = () => {
-  const { organizationId, tables, searchParam, selectedTable, setTables, setSelectedTable } =
-    useContext(TooljetDatabaseContext);
+  const {
+    organizationId,
+    tables,
+    searchParam,
+    selectedTable,
+    setTables,
+    setSelectedTable,
+    loadingState,
+    setLoadingState,
+  } = useContext(TooljetDatabaseContext);
   const [loading, setLoading] = useState(false);
   const [showInput, setShowInput] = useState(false);
   const { updateSidebarNAV } = useContext(BreadCrumbContext);
@@ -19,18 +27,31 @@ const List = () => {
 
   async function fetchTables() {
     setLoading(true);
+    setLoadingState(true);
     const { error, data } = await tooljetDatabaseService.findAll(organizationId);
     setLoading(false);
+    setLoadingState(false);
 
     if (error) {
       toast.error(error?.message ?? 'Failed to fetch tables');
       return;
     }
 
-    if (Array.isArray(data?.result)) {
+    if (!isEmpty(data?.result)) {
       setTables(data.result || []);
-      setSelectedTable(data?.result[0]?.table_name);
-      updateSidebarNAV(data?.result[0]?.table_name);
+      if (localStorage.getItem('tableDetails')) {
+        const retrievedTableData = JSON.parse(localStorage.getItem('tableDetails'));
+        setSelectedTable(retrievedTableData);
+        updateSidebarNAV(retrievedTableData.table_name);
+        localStorage.removeItem('tableDetails');
+      } else {
+        setSelectedTable({ table_name: data.result[0].table_name, id: data.result[0].id });
+        updateSidebarNAV(data.result[0].table_name);
+      }
+    } else {
+      setTables([]);
+      setSelectedTable({});
+      updateSidebarNAV(null);
     }
   }
 
@@ -38,6 +59,12 @@ const List = () => {
     fetchTables();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const renamedTableList = tables.map((table) => (table.id === selectedTable.id ? selectedTable : table));
+    setTables(renamedTableList);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTable]);
 
   let filteredTables = [...tables];
 
@@ -72,20 +99,21 @@ const List = () => {
             onClearCallback={() => setShowInput(false)}
             customClass="tj-common-search-input"
             autoFocus={true}
+            setShowInput={setShowInput}
           />
         )}
       </div>
       <div className="list-group mb-3">
         {loading && <Skeleton count={3} height={22} />}
         {!loading &&
-          filteredTables?.map(({ table_name }, index) => (
+          filteredTables?.map(({ id, table_name }, index) => (
             <ListItem
               key={index}
-              active={table_name === selectedTable}
+              active={id === selectedTable.id}
               text={table_name}
               onDeleteCallback={fetchTables}
               onClick={() => {
-                setSelectedTable(table_name);
+                setSelectedTable({ table_name, id });
                 updateSidebarNAV(table_name);
               }}
             />

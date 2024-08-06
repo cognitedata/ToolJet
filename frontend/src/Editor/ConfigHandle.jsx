@@ -1,3 +1,4 @@
+import { useEditorStore } from '@/_stores/editorStore';
 import React from 'react';
 
 export const ConfigHandle = function ConfigHandle({
@@ -12,13 +13,19 @@ export const ConfigHandle = function ConfigHandle({
   setSelectedComponent = () => null, //! Only Modal widget passes this uses props down. All other widgets use selecto lib
   customClassName = '',
   configWidgetHandlerForModalComponent = false,
+  isVersionReleased,
+  showHandle,
 }) {
+  const shouldShowHandle = useEditorStore((state) => state.hoveredComponent === id) || showHandle;
+
   return (
     <div
       className={`config-handle ${customClassName}`}
       ref={dragRef}
       style={{
-        top: position === 'top' ? '-22px' : widgetTop + widgetHeight - 10,
+        top: position === 'top' ? '-20px' : widgetTop + widgetHeight - (widgetTop < 10 ? 15 : 10),
+        visibility: shouldShowHandle && !isMultipleComponentsSelected ? 'visible' : 'hidden',
+        left: '-1px',
       }}
     >
       <span
@@ -31,11 +38,11 @@ export const ConfigHandle = function ConfigHandle({
           style={{ display: 'flex', alignItems: 'center' }}
           onClick={(e) => {
             e.preventDefault();
-            e.stopPropagation();
             setSelectedComponent(id, component, e.shiftKey);
           }}
           role="button"
           data-cy={`${component.name.toLowerCase()}-config-handle`}
+          className="text-truncate"
         >
           <img
             style={{ cursor: 'pointer', marginRight: '5px', verticalAlign: 'middle' }}
@@ -46,7 +53,7 @@ export const ConfigHandle = function ConfigHandle({
           />
           <span>{component.name}</span>
         </div>
-        {!isMultipleComponentsSelected && (
+        {!isMultipleComponentsSelected && !isVersionReleased && (
           <div className="delete-part">
             <img
               style={{ cursor: 'pointer', marginLeft: '5px' }}
@@ -55,7 +62,7 @@ export const ConfigHandle = function ConfigHandle({
               role="button"
               height="12"
               draggable="false"
-              onClick={() => removeComponent({ id })}
+              onClick={() => removeComponent(id)}
               data-cy={`${component.name.toLowerCase()}-delete-button`}
               className="delete-icon"
             />

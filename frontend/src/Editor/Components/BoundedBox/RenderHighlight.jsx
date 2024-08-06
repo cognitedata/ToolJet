@@ -51,7 +51,8 @@ export const RenderHighlight = ({
               const annotations = prevState.filter((annotation) => {
                 return annotation.data.id !== data.id;
               });
-              setExposedVariable('annotations', getExposedAnnotations(annotations)).then(() => fireEvent('onChange'));
+              setExposedVariable('annotations', getExposedAnnotations(annotations));
+              fireEvent('onChange');
               return annotations;
             });
           }}
@@ -95,14 +96,16 @@ export const RenderHighlight = ({
                   }
                   return acc;
                 }, []);
-                setExposedVariable('annotations', getExposedAnnotations(annotations)).then(() => fireEvent('onChange'));
+                setExposedVariable('annotations', getExposedAnnotations(annotations));
+                fireEvent('onChange');
 
                 return annotations;
               });
             }}
             useCustomStyles={true}
             value={annotation.data.text}
-            useMenuPortal={false}
+            // useMenuPortal={false}
+            useMenuPortal
             styles={selectElementStyles(darkMode, '100%')}
           />
         </div>

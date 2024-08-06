@@ -29,7 +29,7 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
       appsNotInGroup: [],
       selectedAppIds: [],
       removeAppIds: [],
-      currentTab: 'apps',
+      currentTab: 'users',
       selectedUsers: [],
     };
   }
@@ -69,9 +69,6 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
   };
 
   searchUsersNotInGroup = async (query, groupPermissionId) => {
-    if (!query) {
-      return [];
-    }
     return new Promise((resolve, reject) => {
       groupPermissionService
         .getUsersNotInGroup(query, groupPermissionId)
@@ -322,7 +319,9 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
     const orgEnvironmentPermission = groupPermission
       ? groupPermission.org_environment_variable_create &&
         groupPermission.org_environment_variable_update &&
-        groupPermission.org_environment_variable_delete
+        groupPermission.org_environment_variable_delete &&
+        groupPermission.org_environment_constant_create &&
+        groupPermission.org_environment_constant_delete
       : false;
 
     return (
@@ -356,34 +355,14 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
                         .replace(/\s+/g, '-')}-group-name-update-link`}
                       className="tj-text-xsm font-weight-500 edit-group"
                     >
-                      <SolidIcon fill="#28303F" name="editrectangle" width="14" />
-                      Edit name
-                    </Link>
-                    <Link
-                      className="delete-group tj-text-xsm font-weight-500"
-                      onClick={() => this.props.deleteGroup(groupPermission.id)}
-                      data-cy={`${String(groupPermission.group).toLowerCase().replace(/\s+/g, '-')}-group-delete-link`}
-                    >
-                      <SolidIcon fill="#E54D2E" name="trash" width="14" /> Delete group
+                      <SolidIcon name="editrectangle" width="14" />
+                      Rename
                     </Link>
                   </div>
                 )}
               </div>
 
               <nav className="nav nav-tabs groups-sub-header-wrap">
-                <a
-                  onClick={() => this.setState({ currentTab: 'apps' })}
-                  className={cx('nav-item nav-link', { active: currentTab === 'apps' })}
-                  data-cy="apps-link"
-                >
-                  <SolidIcon
-                    className="manage-group-tab-icons"
-                    fill={currentTab === 'apps' ? '#3E63DD' : '#C1C8CD'}
-                    name="grid"
-                    width="16"
-                  ></SolidIcon>
-                  {this.props.t('header.organization.menus.manageGroups.permissionResources.apps', 'Apps')}
-                </a>
                 <a
                   onClick={() => this.setState({ currentTab: 'users' })}
                   className={cx('nav-item nav-link', { active: currentTab === 'users' })}
@@ -398,6 +377,7 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
 
                   {this.props.t('header.organization.menus.manageGroups.permissionResources.users', 'Users')}
                 </a>
+
                 <a
                   onClick={() => this.setState({ currentTab: 'permissions' })}
                   className={cx('nav-item nav-link', { active: currentTab === 'permissions' })}
@@ -415,6 +395,19 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
                     'Permissions'
                   )}
                 </a>
+                <a
+                  onClick={() => this.setState({ currentTab: 'apps' })}
+                  className={cx('nav-item nav-link', { active: currentTab === 'apps' })}
+                  data-cy="apps-link"
+                >
+                  <SolidIcon
+                    className="manage-group-tab-icons"
+                    fill={currentTab === 'apps' ? '#3E63DD' : '#C1C8CD'}
+                    name="grid"
+                    width="16"
+                  ></SolidIcon>
+                  {this.props.t('header.organization.menus.manageGroups.permissionResources.apps', 'Apps')}
+                </a>
               </nav>
 
               <div className="manage-groups-body">
@@ -426,7 +419,6 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
                       <div className="row">
                         <div className="manage-groups-app-dropdown" data-cy="select-search">
                           <Multiselect
-                            value={selectedAppIds}
                             onChange={this.setSelectedApps}
                             options={appSelectOptions}
                             overrideStrings={{
@@ -436,7 +428,7 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
                               ),
                             }}
                             setState={this.setState}
-                            selectedApps={this.state.selectedAppIds}
+                            value={this.state.selectedAppIds}
                           />
                         </div>
 
@@ -683,8 +675,8 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
                       {groupPermission.group == 'all_users' && (
                         <div className="manage-group-users-info" data-cy="helper-text-all-user-included">
                           <p className="tj-text-xsm">
-                            <SolidIcon name="information" fill="#3E63DD" /> All users include every users in the app.
-                            This list is not editable
+                            <SolidIcon name="information" fill="#3E63DD" /> All users within the workspace are included
+                            in this list. This list cannot be edited.
                           </p>
                         </div>
                       )}
@@ -712,9 +704,13 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
                               <div className="skeleton-line w-10"></div>
                             </td>
                           </tr>
-                        ) : (
+                        ) : usersInGroup.length > 0 ? (
                           usersInGroup.map((user) => (
-                            <div key={user.id} className="manage-group-users-row">
+                            <div
+                              key={user.id}
+                              className="manage-group-users-row"
+                              data-cy={`${String(user.email).toLowerCase().replace(/\s+/g, '-')}-user-row`}
+                            >
                               <p className="tj-text-sm d-flex align-items-center">
                                 <div className="name-avatar">
                                   {`${user?.first_name?.[0] ?? ''} ${user?.last_name?.[0] ?? ''}`}
@@ -741,6 +737,19 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
                               </p>
                             </div>
                           ))
+                        ) : (
+                          <div className="manage-groups-no-apps-wrap">
+                            <div className="manage-groups-no-apps-icon">
+                              <BulkIcon name="users" fill="#3E63DD" width="48" />
+                            </div>
+                            <p className="tj-text-md font-weight-500" data-cy="helper-text-no-apps-added">
+                              No users added yet
+                            </p>
+                            <span className="tj-text-sm text-center" data-cy="helper-text-user-groups-permissions">
+                              Add users to this group to configure
+                              <br /> permissions for them!
+                            </span>
+                          </div>
                         )}
                       </section>
                     </div>
@@ -873,7 +882,7 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
                                 </div>
                                 <div className="apps-variable-permission-wrap">
                                   <div data-cy="resource-workspace-variable">
-                                    {this.props.t('globals.environmentVar', 'Environment variables')}
+                                    {this.props.t('globals.environmentVar', 'Workspace constant/variable')}
                                   </div>
                                   <div className="text-muted">
                                     <div>
@@ -886,6 +895,8 @@ class ManageGroupPermissionResourcesComponent extends React.Component {
                                               org_environment_variable_create: !orgEnvironmentPermission,
                                               org_environment_variable_update: !orgEnvironmentPermission,
                                               org_environment_variable_delete: !orgEnvironmentPermission,
+                                              org_environment_constant_create: !orgEnvironmentPermission,
+                                              org_environment_constant_delete: !orgEnvironmentPermission,
                                             });
                                           }}
                                           checked={orgEnvironmentPermission}

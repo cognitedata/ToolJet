@@ -55,13 +55,13 @@ export function generateUIComponents(JSONSchema, advanced) {
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['value']['value'] = value?.value;
             if (value?.placeholder)
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['placeholder']['value'] = value?.placeholder;
+            if (value?.label) uiComponentsDraft[index * 2 + 1]['definition']['properties']['label']['value'] = '';
             break;
           case 'DropDown':
             if (value?.styles?.disabled)
               uiComponentsDraft[index * 2 + 1]['definition']['styles']['disabledState']['value'] =
                 value?.styles?.disabled;
             if (value?.styles?.visibility) {
-              console.log('value--', value?.styles?.visibility, typeof value?.styles?.visibility);
               uiComponentsDraft[index * 2 + 1]['definition']['styles']['visibility']['value'] = validBooleanChecker(
                 value?.styles?.visibility
               );
@@ -72,7 +72,7 @@ export function generateUIComponents(JSONSchema, advanced) {
             if (value?.styles?.justifyContent)
               uiComponentsDraft[index * 2 + 1]['definition']['styles']['justifyContent']['value'] =
                 value?.styles?.justifyContent;
-            if (value?.customRule)
+            if (value?.validation?.customRule)
               uiComponentsDraft[index * 2 + 1]['definition']['validation']['customRule']['value'] = value?.customRule;
             if (value?.displayValues)
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['display_values']['value'] =
@@ -148,13 +148,17 @@ export function generateUIComponents(JSONSchema, advanced) {
 
             if (value?.value)
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['value']['value'] = value?.value;
+            else uiComponentsDraft[index * 2 + 1]['definition']['properties']['value']['value'] = null;
+
             if (value?.maxValue)
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['maxValue']['value'] = value?.maxValue;
             if (value?.minValue)
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['minValue']['value'] = value?.minValue;
             if (value?.placeholder)
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['placeholder']['value'] = value?.placeholder;
+            if (value?.label) uiComponentsDraft[index * 2 + 1]['definition']['properties']['label']['value'] = '';
             break;
+
           case 'PasswordInput':
             if (value?.styles?.backgroundColor)
               uiComponentsDraft[index * 2 + 1]['definition']['styles']['backgroundColor']['value'] =
@@ -183,6 +187,8 @@ export function generateUIComponents(JSONSchema, advanced) {
               uiComponentsDraft[index * 2 + 1]['definition']['validation']['regex']['value'] = value?.validation?.regex;
             if (value?.placeholder)
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['placeholder']['value'] = value?.placeholder;
+            if (value?.label) uiComponentsDraft[index * 2 + 1]['definition']['properties']['label']['value'] = '';
+
             break;
           case 'Datepicker':
             if (value?.styles?.borderRadius)
@@ -195,9 +201,9 @@ export function generateUIComponents(JSONSchema, advanced) {
               uiComponentsDraft[index * 2 + 1]['definition']['styles']['visibility']['value'] = validBooleanChecker(
                 value?.styles?.visibility
               );
-
-            if (value?.customRule)
-              uiComponentsDraft[index * 2 + 1]['definition']['validation']['customRule']['value'] = value?.customRule;
+            if (value?.validation?.customRule)
+              uiComponentsDraft[index * 2 + 1]['definition']['validation']['customRule']['value'] =
+                value?.validation?.customRule;
             if (value?.value)
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['defaultValue']['value'] = value?.value;
             if (value?.disabledDates)
@@ -286,6 +292,8 @@ export function generateUIComponents(JSONSchema, advanced) {
                 value?.styles?.borderRadius;
             if (value?.value)
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['value']['value'] = value?.value;
+            else uiComponentsDraft[index * 2 + 1]['definition']['properties']['value']['value'] = null;
+
             if (value?.placeholder)
               uiComponentsDraft[index * 2 + 1]['definition']['properties']['placeholder']['value'] = value?.placeholder;
             break;
@@ -405,8 +413,9 @@ export function generateUIComponents(JSONSchema, advanced) {
           default:
             return;
         }
-        // converting label/key as text input
+        // converting label/key as text ui element/component
         uiComponentsDraft[index * 2]['definition']['properties']['text']['value'] = value?.label ?? key;
+        uiComponentsDraft[index * 2]['formKey'] = key;
       }
     });
     // adding title as first item
