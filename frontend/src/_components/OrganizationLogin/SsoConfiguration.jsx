@@ -1,5 +1,6 @@
 import React from 'react';
 import './Configuration.scss';
+import { AzureSSOModal } from './AzureSsoModal';
 import { GoogleSSOModal } from './GoogleSsoModal';
 import { GithubSSOModal } from './GithubSsoModal';
 import { organizationService } from '@/_services';
@@ -227,6 +228,8 @@ class SSOConfiguration extends React.Component {
   getSSOIcon = (key) => {
     const iconStyles = { width: '20px', height: '20x' };
     switch (key) {
+      case 'cdf_azure':
+        return <img src="assets/images/Azure.png" alt="Azure" style={iconStyles} />;
       case 'google':
         return <img src="assets/images/Google.png" alt="Google" style={iconStyles} />;
       case 'git':
@@ -329,6 +332,18 @@ class SSOConfiguration extends React.Component {
 
             <Dropdown.Menu style={{ width: '100%' }}>
               <Dropdown.Item
+                eventKey="Azure"
+                disabled={
+                  !defaultSSO || this.isOptionEnabled('cdf_azure') || !this.isInstanceOptionEnabled('cdf_azure')
+                } // Disable the item if defaultSSO is false
+                data-cy="dropdown-options-azure"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {this.getSSOIcon('cdf_azure')}
+                  <span style={{ marginLeft: 8 }}>Azure</span>
+                </div>
+              </Dropdown.Item>
+              <Dropdown.Item
                 eventKey="Google"
                 disabled={!defaultSSO || this.isOptionEnabled('google') || !this.isInstanceOptionEnabled('google')} // Disable the item if defaultSSO is false
                 data-cy="dropdown-options-google"
@@ -359,8 +374,17 @@ class SSOConfiguration extends React.Component {
         <p className="sso-note" data-cy="instance-sso-helper-text">
           Display default SSO for workspace URL login
         </p>
+        {this.renderSSOOption('cdf_azure', 'Microsoft')}
         {this.renderSSOOption('google', 'Google')}
         {this.renderSSOOption('git', 'GitHub')}
+        {showModal && currentSSO === 'cdf_azure' && (
+          <AzureSSOModal
+            settings={this.state.ssoOptions.find((obj) => obj.sso === currentSSO)}
+            onClose={() => this.setState({ showModal: false })}
+            onUpdateSSOSettings={this.handleUpdateSSOSettings}
+            isInstanceOptionEnabled={this.isInstanceOptionEnabled}
+          />
+        )}
         {showModal && currentSSO === 'google' && (
           <GoogleSSOModal
             settings={this.state.ssoOptions.find((obj) => obj.sso === currentSSO)}

@@ -12,5 +12,13 @@
     "params": {
       "token": "id_token"
     }
+  },
+  "cdf_azure": {
+    "name": "Microsoft",
+    "responseType": "hash",
+    "params": {
+      "token": "id_token",
+      "access_token": "access_token"
+    }
   }
 }

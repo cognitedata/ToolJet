@@ -20,6 +20,7 @@ import {
 } from 'src/helpers/user_lifecycle';
 import { dbTransactionWrap, generateInviteURL, generateNextNameAndSlug, isValidDomain } from 'src/helpers/utils.helper';
 import { DeepPartial, EntityManager } from 'typeorm';
+import { AzureOAuthService } from './azure_oauth.service';
 import { GitOAuthService } from './git_oauth.service';
 import { GoogleOAuthService } from './google_oauth.service';
 import UserResponse from './models/user_response';
@@ -34,6 +35,7 @@ export class OauthService {
     private readonly authService: AuthService,
     private readonly organizationService: OrganizationsService,
     private readonly organizationUsersService: OrganizationUsersService,
+    private readonly azureOAuthService: AzureOAuthService,
     private readonly googleOAuthService: GoogleOAuthService,
     private readonly gitOAuthService: GitOAuthService,
     private configService: ConfigService
@@ -91,8 +93,16 @@ export class OauthService {
     return user;
   }
 
-  #getSSOConfigs(ssoType: 'google' | 'git'): Partial<SSOConfigs> {
+  #getSSOConfigs(ssoType: 'cdf_azure' | 'google' | 'git'): Partial<SSOConfigs> {
     switch (ssoType) {
+      case 'cdf_azure':
+        return {
+          enabled: !!this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+          configs: {
+            clientId: this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+            tenantId: this.configService.get<string>('SSO_AZURE_OAUTH2_TENANT_ID'),
+          },
+        };
       case 'google':
         return {
           enabled: !!this.configService.get<string>('SSO_GOOGLE_OAUTH2_CLIENT_ID'),
@@ -112,7 +122,7 @@ export class OauthService {
     }
   }
 
-  #getInstanceSSOConfigs(ssoType: 'google' | 'git'): DeepPartial<SSOConfigs> {
+  #getInstanceSSOConfigs(ssoType: 'cdf_azure' | 'google' | 'git'): DeepPartial<SSOConfigs> {
     return {
       organization: {
         enableSignUp: this.configService.get<string>('SSO_DISABLE_SIGNUPS') !== 'true',
@@ -127,7 +137,7 @@ export class OauthService {
     response: Response,
     ssoResponse: SSOResponse,
     configId?: string,
-    ssoType?: 'google' | 'git',
+    ssoType?: 'cdf_azure' | 'google' | 'git',
     user?: User
   ): Promise<any> {
     const {
@@ -142,6 +152,7 @@ export class OauthService {
     const isInstanceSSOLogin = !!(!configId && ssoType && !organizationId);
     const isInstanceSSOOrganizationLogin = !!(!configId && ssoType && organizationId);
 
+    console.log('foo2');
     if (configId) {
       // SSO under an organization
       ssoConfigs = await this.organizationService.getConfigs(configId);
@@ -169,10 +180,17 @@ export class OauthService {
     }
     const { enableSignUp, domain } = organization;
     const { sso, configs } = ssoConfigs;
-    const { token } = ssoResponse;
+    const { token, accessToken } = ssoResponse;
+
+    console.log('foo7');
+    console.log(ssoResponse);
 
     let userResponse: UserResponse;
     switch (sso) {
+      case 'cdf_azure':
+        userResponse = await this.azureOAuthService.signIn(token, configs);
+        break;
+
       case 'google':
         userResponse = await this.googleOAuthService.signIn(token, configs);
         break;
@@ -387,6 +405,8 @@ export class OauthService {
         organizationDetails = await this.organizationService.fetchOrganization(userDetails.defaultOrganizationId);
       }
 
+      console.log('foo2');
+
       return await this.authService.generateLoginResultPayload(
         response,
         userDetails,
@@ -395,7 +415,9 @@ export class OauthService {
         false,
         user,
         manager,
-        isInviteRedirect ? loginOrganiaztionId : null
+        isInviteRedirect ? loginOrganiaztionId : null,
+        token,
+        accessToken
       );
     });
   }
@@ -403,6 +425,7 @@ export class OauthService {
 
 interface SSOResponse {
   token: string;
+  accessToken?: string;
   state?: string;
   organizationId?: string;
   signupOrganizationId?: string;

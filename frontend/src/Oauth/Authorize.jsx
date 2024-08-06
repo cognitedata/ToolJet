@@ -40,9 +40,11 @@ export function Authorize({ navigate }) {
       const params = new Proxy(new URLSearchParams(window.location.hash.substr(1)), {
         get: (searchParams, prop) => searchParams.get(prop),
       });
+      authParams.accessToken = params[configs.params.access_token] || null;
       authParams.token = params[configs.params.token];
       authParams.state = params[configs.params.state];
     } else {
+      authParams.accessToken = router.query[configs.params.access_token] || null;
       authParams.token = router.query[configs.params.token];
       authParams.state = router.query[configs.params.state];
     }
@@ -77,6 +79,7 @@ export function Authorize({ navigate }) {
           updateCurrentSession({
             isUserLoggingIn: true,
           });
+
           onLoginSuccess(restResponse, navigate);
         }
       })

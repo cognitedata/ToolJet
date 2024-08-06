@@ -20,6 +20,7 @@ import generateFile from '@/_lib/generate-file';
 import RunjsIcon from '@/Editor/Icons/runjs.svg';
 import RunTooljetDbIcon from '@/Editor/Icons/tooljetdb.svg';
 import RunPyIcon from '@/Editor/Icons/runpy.svg';
+import CognitePyIcon from '@/Editor/Icons/cognitepy.svg';
 import { v4 as uuidv4 } from 'uuid';
 // eslint-disable-next-line import/no-unresolved
 import { allSvgs } from '@tooljet/plugins/client';
@@ -1000,6 +1001,8 @@ export function previewQuery(_ref, query, calledFromQuery = false, userSuppliedP
       queryExecutionPromise = executeMultilineJS(_ref, query.options.code, query?.id, true, '', parameters);
     } else if (query.kind === 'runpy') {
       queryExecutionPromise = executeRunPycode(_ref, query.options.code, query, true, 'edit', queryState);
+    } else if (query.kind === 'cognitepy') {
+      queryExecutionPromise = executeRunPycode(_ref, query.options.code, query, true, 'edit', queryState);
     } else {
       queryExecutionPromise = dataqueryService.preview(
         query,
@@ -1030,8 +1033,8 @@ export function previewQuery(_ref, query, calledFromQuery = false, userSuppliedP
           setPreviewData(finalData);
         }
         let queryStatusCode = data?.status ?? null;
-        const queryStatus = query.kind === 'runpy' ? data?.data?.status ?? 'ok' : data.status;
-
+        const queryStatus =
+          query.kind === 'runpy' || query.kind === 'cognitepy' ? data?.data?.status ?? 'ok' : data.status;
         switch (true) {
           // Note: Need to move away from statusText -> statusCode
           case queryStatus === 'Bad Request' ||
@@ -1173,6 +1176,8 @@ export function runQuery(
         queryExecutionPromise = executeMultilineJS(_self, query.options.code, query?.id, false, mode, parameters);
       } else if (query.kind === 'runpy') {
         queryExecutionPromise = executeRunPycode(_self, query.options.code, query, false, mode, queryState);
+      } else if (query.kind === 'cognitepy') {
+        queryExecutionPromise = executeRunPycode(_self, query.options.code, query, false, mode, queryState);
       } else {
         queryExecutionPromise = dataqueryService.run(queryId, options, query?.options);
       }
@@ -1185,7 +1190,8 @@ export function runQuery(
           }
 
           let queryStatusCode = data?.status ?? null;
-          const promiseStatus = query.kind === 'runpy' ? data?.data?.status ?? 'ok' : data.status;
+          const promiseStatus =
+            query.kind === 'runpy' || query.kind === 'cognitepy' ? data?.data?.status ?? 'ok' : data.status;
           // Note: Need to move away from statusText -> statusCode
           if (
             promiseStatus === 'failed' ||
@@ -1199,6 +1205,9 @@ export function runQuery(
             let errorData = {};
             switch (query.kind) {
               case 'runpy':
+                errorData = data.data;
+                break;
+              case 'cognitepy':
                 errorData = data.data;
                 break;
               case 'tooljetdb':
@@ -1466,6 +1475,7 @@ export const getSvgIcon = (key, height = 50, width = 50, iconFile = undefined, s
   if (key === 'runjs') return <RunjsIcon style={{ height, width }} />;
   if (key === 'tooljetdb') return <RunTooljetDbIcon style={{ height, width }} />;
   if (key === 'runpy') return <RunPyIcon style={{ height, width }} />;
+  if (key === 'cognitepy') return <CognitePyIcon style={{ height, width }} />;
 
   if (typeof localStorage !== 'undefined') {
     const darkMode = localStorage.getItem('darkMode') === 'true';
