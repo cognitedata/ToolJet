@@ -70,6 +70,7 @@
     "joi": "^17.4.1",
     "js-base64": "^3.7.2",
     "jszip": "^3.10.1",
+    "jwks-rsa": "^3.1.0",
     "lodash": "^4.17.21",
     "module-from-string": "^3.3.0",
     "nestjs-pino": "^1.4.0",

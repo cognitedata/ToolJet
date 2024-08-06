@@ -6,6 +6,7 @@ import { Restapi } from './Restapi';
 // eslint-disable-next-line import/no-unresolved
 import { Runjs } from './Runjs';
 import { Runpy } from './Runpy';
+import { Cognitepy } from './Cognitepy';
 import { Stripe } from './Stripe';
 import { Openapi } from './Openapi';
 import Grpc from './GRPC';
@@ -36,6 +37,7 @@ export const allSources = {
   Restapi,
   Runjs,
   Runpy,
+  Cognitepy,
   Stripe,
   Openapi,
   Grpc,

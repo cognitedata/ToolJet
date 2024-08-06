@@ -136,7 +136,7 @@ class SignupPageComponent extends React.Component {
       (isEmpty(this.state.name) && !comingFromInviteFlow) ||
       this.state.password.length < 5;
 
-    const isAnySSOEnabled = !!configs?.git?.enabled || !!configs?.google?.enabled;
+    const isAnySSOEnabled = !!configs?.git?.enabled || !!configs?.google?.enabled || !!configs?.cdf_azure?.enabled;
     const shouldShowSignupDisabledCard =
       !this.organizationToken && !configs?.enable_sign_up && !configs?.form?.enable_sign_up;
     const passwordLabelText = this.organizationToken ? 'Create a password' : 'Password';

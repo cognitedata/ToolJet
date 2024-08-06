@@ -1,80 +1,23 @@
-version: "3"
+version: '3.8'
 
 services:
-  plugins:
-    build:
-      context: ./
-      dockerfile: ./docker/plugins.Dockerfile.dev
-    image: tooljet-plugins:development
-    container_name: plugins
-    platform: linux/x86_64
-    volumes:
-      - ./plugins:/app/plugins
-    command: npm run --prefix plugins start
-
-  client:
-    build:
-      context: ./
-      dockerfile: ./docker/client.Dockerfile.dev
-    image: tooljet-client:development
-    container_name: client
-    platform: linux/x86_64
-    volumes:
-      - ./frontend:/app/frontend:delegated
-      - ./plugins:/app/plugins
-      - /app/frontend/node_modules/
-    ports:
-      - 8082:8082
-    environment:
-      - WEBPACKER_DEV_SERVER_HOST=0.0.0.0
-      - NODE_ENV=development
-      - SERVE_CLIENT=false
-    command: npm run --prefix frontend start
-
-  server:
-    build:
-      context: ./
-      dockerfile: ./docker/server.Dockerfile.dev
-    image: tooljet-server:development
-    container_name: server
-    platform: linux/x86_64
-    depends_on:
-      - postgres
-    volumes:
-      - ./server:/app/server:delegated
-      - ./plugins:/app/plugins
-      - /app/server/node_modules/
-      - ./.env:/app/.env
-      - ./.env.test:/app/.env.test
-    ports:
-      - 3000:3000
-    environment:
-      - SERVE_CLIENT=false
-      - FORCE_COLOR=1
-    command: npm run --prefix server start:dev
-
-  postgrest:
-    container_name: postgrest
-    image: postgrest/postgrest:v12.0.2
-    ports:
-      - "3001:3000"
-    env_file:
-      - .env
-    depends_on:
-      - postgres
 
   postgres:
-    container_name: ${PG_HOST}
     image: postgres:13
     restart: always
+    network_mode: bridge
     ports:
       - 5432:5432
     volumes:
-      - postgres:/data/postgres
-    env_file: .env
+      - postgres:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=${PG_USER}
-      - POSTGRES_PASSWORD=${PG_PASS}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
 
 volumes:
   postgres:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${PWD}/postgres_data

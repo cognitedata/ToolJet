@@ -127,7 +127,8 @@ export const QueryManagerBody = ({
     if (
       dataSourceMeta?.disableTransformations ||
       selectedDataSource?.kind === 'runjs' ||
-      selectedDataSource?.kind === 'runpy'
+      selectedDataSource?.kind === 'runpy' ||
+      selectedDataSource?.kind === 'cognitepy'
     )
       return;
     return (
