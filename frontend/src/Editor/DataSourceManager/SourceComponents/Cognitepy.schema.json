@@ -1,0 +1,18 @@
+{
+    "$schema": "https://json-schema.org/",
+    "$id": "https://tooljet.io/Cognitepy.schema.json",
+    "title": "Cognite Python SDK datasource",
+    "description": "A schema defining cognitepy datasource",
+    "type": "object",
+    "source": {
+      "name": "Cognite Python SDK",
+      "kind": "cognitepy",
+      "exposedVariables": {
+        "isLoading": false,
+        "data": {},
+        "rawData": {}
+      },
+      "customTesting": true,
+      "disableTransformations": true
+    }
+  }

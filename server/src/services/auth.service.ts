@@ -52,6 +52,7 @@ import { SIGNUP_ERRORS } from 'src/helpers/errors.constants';
 const bcrypt = require('bcrypt');
 const uuid = require('uuid');
 import { ResendInviteDto } from '@dto/resend-invite.dto';
+import UserResponse from "@ee/services/oauth/models/user_response";
 
 @Injectable()
 export class AuthService {
@@ -824,7 +825,9 @@ export class AuthService {
           throw new BadRequestException('Invalid invitation link');
         }
 
-        isSSOVerify = source === URL_SSO_SOURCE && (user.source === SOURCE.GOOGLE || user.source === SOURCE.GIT);
+        isSSOVerify =
+          source === URL_SSO_SOURCE &&
+          (user.source === SOURCE.AZURE || user.source === SOURCE.GOOGLE || user.source === SOURCE.GIT);
 
         const lifecycleParams = getUserStatusAndSource(
           isSSOVerify ? lifecycleEvents.USER_SSO_ACTIVATE : lifecycleEvents.USER_REDEEM,
@@ -1044,7 +1047,9 @@ export class AuthService {
     isPasswordLogin: boolean,
     loggedInUser?: User,
     manager?: EntityManager,
-    invitedOrganizationId?: string
+    invitedOrganizationId?: string,
+    token?: string,
+    accessToken?: string
   ): Promise<any> {
     const request = RequestContext?.currentContext?.req;
     const organizationIds = new Set([
@@ -1052,6 +1057,8 @@ export class AuthService {
       ...(organization ? [organization.id] : []),
     ]);
     let sessionId = loggedInUser?.sessionId;
+    console.log('foo9');
+    console.log(accessToken);
 
     // logged in user and new user are different -> creating session
     if (loggedInUser?.id !== user.id) {
@@ -1090,6 +1097,10 @@ export class AuthService {
     }
 
     response.cookie('tj_auth_token', this.jwtService.sign(JWTPayload), cookieOptions);
+
+    // TODO add cdf_auth_token
+
+    response.cookie('cdf_auth_token', accessToken, cookieOptions);
 
     const responsePayload = {
       id: user.id,
@@ -1239,4 +1250,10 @@ interface JWTPayload {
   isSSOLogin: boolean;
   isPasswordLogin: boolean;
   invitedOrganizationId?: string;
+  token?: string;
+  accessToken?: string;
+}
+
+interface AccessJWTPayload {
+  token?: string;
 }

@@ -18,6 +18,7 @@ const staticDataSources = [
   { kind: 'restapi', id: 'null', name: 'REST API' },
   { kind: 'runjs', id: 'runjs', name: 'Run JavaScript code' },
   { kind: 'runpy', id: 'runpy', name: 'Run Python code' },
+  { kind: 'cognitepy', id: 'cognitepy', name: 'Cognite Python SDK' },
 ];
 
 export const LeftSidebarInspector = ({

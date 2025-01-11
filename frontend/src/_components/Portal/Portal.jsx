@@ -77,7 +77,7 @@ const Modal = ({
     callgpt().then(() => setLoading(false));
   };
 
-  const includeGPT = ['Runjs', 'Runpy', 'transformation'].includes(componentName) && isCopilotEnabled;
+  const includeGPT = ['Runjs', 'Runpy', 'Cognitepy', 'transformation'].includes(componentName) && isCopilotEnabled;
 
   const renderModalContent = () => (
     <div className="modal-content" style={{ ...portalStyles, ...styles }} onClick={(e) => e.stopPropagation()}>

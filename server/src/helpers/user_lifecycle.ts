@@ -15,6 +15,7 @@ export enum lifecycleEvents {
 export enum SOURCE {
   INVITE = 'invite',
   SIGNUP = 'signup',
+  AZURE = 'cdf_azure',
   GOOGLE = 'google',
   GIT = 'git',
   WORKSPACE_SIGNUP = 'workspace_signup',
@@ -107,5 +108,5 @@ export enum WORKSPACE_USER_STATUS {
   ARCHIVED = 'archived',
 }
 
-type source = 'google' | 'git' | 'signup' | 'invite' | 'workspace_signup';
+type source = 'cdf_azure' | 'google' | 'git' | 'signup' | 'invite' | 'workspace_signup';
 type status = 'invited' | 'verified' | 'active' | 'archived';

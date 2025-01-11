@@ -44,7 +44,9 @@ const QueryManager = ({ mode, appId, darkMode, apps, allComponents, appDefinitio
       //TODO: currently type is not taken into account. May create issues in importing REST apis. to be revamped when import app is revamped
       if (
         selectedQuery?.kind in defaultSources &&
-        (!selectedQuery?.data_source_id || ['runjs', 'runpy'].includes(selectedQuery?.data_source_id) || !selectedDS)
+        (!selectedQuery?.data_source_id ||
+          ['runjs', 'runpy', 'cognitepy'].includes(selectedQuery?.data_source_id) ||
+          !selectedDS)
       ) {
         return setSelectedDataSource(defaultSources[selectedQuery?.kind]);
       }

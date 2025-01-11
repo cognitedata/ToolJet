@@ -9,6 +9,11 @@ import {
 } from 'typeorm';
 import { Organization } from './organization.entity';
 
+type Azure = {
+  clientId: string;
+  tenantId: string;
+};
+
 type Google = {
   clientId: string;
 };
@@ -26,10 +31,10 @@ export class SSOConfigs {
   organizationId: string;
 
   @Column({ name: 'sso' })
-  sso: 'google' | 'git' | 'form';
+  sso: 'cdf_azure' | 'google' | 'git' | 'form';
 
   @Column({ type: 'json' })
-  configs: Google | Git;
+  configs: Azure | Google | Git;
 
   @Column({ name: 'enabled' })
   enabled: boolean;

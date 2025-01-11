@@ -15,7 +15,7 @@ export class addUserStatusAndSource1666763190092 implements MigrationInterface {
         name: 'source',
         type: 'enum',
         enumName: 'source',
-        enum: ['signup', 'invite', 'google', 'git'],
+        enum: ['signup', 'invite', 'google', 'git', 'cdf_azure'],
         default: `'invite'`,
         isNullable: false,
       }),

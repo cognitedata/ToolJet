@@ -131,6 +131,15 @@ export class OrganizationsService {
 
   constructSSOConfigs() {
     return {
+      cdf_azure: {
+        enabled: !!this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+        configs: {
+          client_id: this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+          tenant_id: this.configService.get<string>('SSO_AZURE_OAUTH2_TENANT_ID'),
+          enable_cdf_access: this.configService.get<string>('SSO_AZURE_OAUTH2_ENABLE_CDF_ACCESS') == 'true',
+          cdf_cluster: this.configService.get<string>('SSO_AZURE_OAUTH2_CDF_CLUSTER'),
+        },
+      },
       google: {
         enabled: !!this.configService.get<string>('SSO_GOOGLE_OAUTH2_CLIENT_ID'),
         configs: {
@@ -416,6 +425,22 @@ export class OrganizationsService {
 
     if (addInstanceLevelSSO && result.inheritSSO) {
       if (
+          this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID') &&
+          !result.ssoConfigs?.some((config) => config.sso === 'cdf_azure')
+      ) {
+        if (!result.ssoConfigs) {
+          result.ssoConfigs = [];
+        }
+        result.ssoConfigs.push({
+          sso: 'cdf_azure',
+          enabled: true,
+          configs: {
+            clientId: this.configService.get<string>('SSO_AZURE_OAUTH2_CLIENT_ID'),
+            tenantId: this.configService.get<string>('SSO_AZURE_OAUTH2_TENANT_ID'),
+          },
+        });
+      }
+      if (
         this.configService.get<string>('SSO_GOOGLE_OAUTH2_CLIENT_ID') &&
         !result.ssoConfigs?.some((config) => config.sso === 'google')
       ) {
@@ -546,7 +571,7 @@ export class OrganizationsService {
   async updateOrganizationConfigs(organizationId: string, params: any) {
     const { type, configs, enabled } = params;
 
-    if (!(type && ['git', 'google', 'form'].includes(type))) {
+    if (!(type && ['cdf_azure', 'git', 'google', 'form'].includes(type))) {
       throw new BadRequestException();
     }
 
