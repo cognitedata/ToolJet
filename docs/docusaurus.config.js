@@ -1,4 +1,14 @@
 const devServerPlugin = require('./src/plugins/devServer/index.js');
+import versionsArchived from './versionsArchived.json';
+
+const baseArchivedURL = "https://archived-docs.tooljet.com/docs/";
+
+const lastFiveArchivedVersions = versionsArchived
+  .slice(0, 5)
+  .map((version, index) => ({
+    version,
+    url: index === 0 ? baseArchivedURL : `${baseArchivedURL}${version}`
+  }));
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -36,9 +46,9 @@ module.exports = {
       logo: {
         href: '/docs/',
         alt: 'ToolJet Logo',
-        src: 'img/Logomark.svg',
-        srcDark: `img/Logomark_white.svg`,
-        width: 90
+        src: 'img/Logomark-v2.svg',
+        srcDark: `img/Logomark_white-v2.svg`,
+        width: 120
       },
       items: [
         {
@@ -121,17 +131,15 @@ module.exports = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl: 'https://github.com/ToolJet/Tooljet/blob/develop/docs/',
-          includeCurrentVersion: false,
-          lastVersion: '2.50.0-LTS',
+          includeCurrentVersion: true,
+          lastVersion: '3.0.0-LTS',
           versions: {
-            '2.61.0': {
-              banner: 'none'
+            current : {
+              label: '3.1.0-Beta 🚧',
+              path: 'beta',
             },
-            '2.62.0': {
-              banner: 'none'
-            },
-            '2.65.0': {
-              banner: 'none'
+            "2.50.0-LTS": {
+              banner: 'none',
             }
           }
         },

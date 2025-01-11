@@ -3,16 +3,25 @@ id: querying-tooljet-db
 title: Querying Data
 ---
 
-Querying the ToolJet database is as easy as querying any other data source on ToolJet.
+Querying the ToolJet database is as easy as querying any other data source on ToolJet. You can use either the GUI or the SQL editor to interact with your data.
 
-- Go to the **Query panel**, and click on the **+Add** button to add a new query, and select **ToolJet Database**.
+## GUI Mode
+
+1. Go to the **Query panel**, and click on the **+Add** button to add a new query, and select **ToolJet Database**.
 
 <div style={{textAlign: 'center', paddingBottom:'24px'}}>
 <img className="screenshot-full" src="/img/v2-beta/database/newui/qtjdb.png" alt="ToolJet Database editor" />
 </div>
 
-- Select the table you want to query and the operation from the dropdown, then enter the required parameters for the selected operation. Click on the **Run** button to execute the query.<br/>
+2. Select the GUI mode from the toggle.
+
+3. Select the table you want to query and the operation from the dropdown, then enter the required parameters for the selected operation. 
+
+4. Click on the **Run** button to execute the query.
+
+:::info
 The selected operation should adhere to the column constraints of the selected table.
+:::
 
 <div style={{textAlign: 'center'}}>
 <img className="screenshot-full" src="/img/v2-beta/database/newui/qtjdb2.png" alt="ToolJet Database editor" />
@@ -21,9 +30,8 @@ The selected operation should adhere to the column constraints of the selected t
 
 <div style={{paddingTop:'24px', paddingBottom:'24px'}}>
 
-## Available Operations
+**Available Operations**:
 
-<div style={{paddingTop:'24px', paddingBottom:'24px'}}>
 
 ### List Rows
 This operation returns all the records from the table.
@@ -49,7 +57,6 @@ This operation returns all the records from the table.
 <img className="screenshot-full" src="/img/v2-beta/database/newui/group-by.png" alt="ToolJet Database editor" />
 </div>
 
-</div>
 
 <div style={{paddingTop:'24px', paddingBottom:'24px'}}>
 
@@ -82,6 +89,38 @@ This operation deletes a record in the table. You can delete a single record or 
 - **Limit**: Limit the number of records to be deleted by entering a number.
 
 </div>
+
+## SQL Editor
+
+The ToolJet **SQL editor** allows you to query the ToolJet Database by writing SQL queries, specifically supporting standard SQL syntax for **Data Manipulation Language (DML)** commands.
+
+### Supported SQL Commands
+
+- **DML Commands**: You can use the following DML commands to manipulate data:
+  - **SELECT**: Retrieve data from the database.
+  - **INSERT**: Add new records to the database.
+  - **UPDATE**: Modify existing data.
+  - **DELETE**: Remove records from the database.
+
+- **Restricted Commands**:
+  - **Data Definition Language (DDL)** commands like **CREATE**, **ALTER**, **TRUNCATE**, **DROP**, and **RENAME** are not allowed.
+  - **Data Control Language (DCL)** commands like **GRANT** and **REVOKE** are also restricted.
+
+### SQL Editor Usage
+
+1. In the Query panel, click on the **+Add** button to add a new query, and select **ToolJet Database**.
+2. Select the **SQL** mode tab in the query editor.
+3. Write your SQL query in the editor.
+4. Click on the **Run** button to execute the query.
+
+<div style={{paddingBottom:'24px', textAlign: 'center'}}>
+<img className="screenshot-full" src="/img/v2-beta/database/newui/sql-editor.png" alt="ToolJet Database SQL Editor" />
+</div>
+
+Example:
+```sql
+SELECT * FROM users WHERE age > 30
+```
 
 ## Modifying Tables with Foreign Key Constraints
 
@@ -136,9 +175,8 @@ The date with time column stores data in the ISO 8601 format. When querying a ta
 1. Connect the query to the Table Component and navigate to its properties panel.
 2. In the Columns section, select the column that stores the date with time.
 3. Change the column type from String to **Date Picker**.
-4. In the **Parse format** section, enable the **Parse in unix timestamp** and **Unix timestamp** options as needed.
-5. Under the date format section, toggle on the **Enable date** and **Enable time** options accordingly.
-6. In the transformation field, the `{{cellValue}}` variable contains the ISO 8601 formatted date. Convert it to a Date object using `{{new Date(cellValue)}}`, then format the Date object to meet your requirements.
+4.  Under the date format section, toggle on the **Enable date** and **Enable time** options accordingly.
+5. In the transformation field, the `{{cellValue}}` variable contains the ISO 8601 formatted date. Convert it to a Date object using `{{new Date(cellValue)}}`, then format the Date object to meet your requirements.
 
 
 <div style={{textAlign: 'center'}}>
@@ -147,6 +185,43 @@ The date with time column stores data in the ISO 8601 format. When querying a ta
 
 </div>
 
+<div style={{paddingTop:'24px'}}>
+
+## Querying JSON Data Type
+
+In ToolJet Database, a column can be set to JSON Data Type, and can be used to store the structured data like arrays or nested objects, making it useful for complex data structures such as configurations or logs. To query the JSON Data Type follow the following steps:
+
+### Flat JSON Object
+
+A flat JSON object is a JSON structure where all key-value pairs exist at a single level, without any nesting. Each key is unique within the object, and all values are direct data entries rather than other objects or arrays.
+
+1. Add **ToolJet DB** as the Data Source from the query panel.
+2. Select **GUI mode** (else you can select SQL mode as well).
+3. Select the **Table name**.
+4. Select the desired operation from the dropdown.
+5. Click on **+ Add Condition** button in front of Filter.
+6. Choose column that consist JSON Data, choose the desired operation and enter the value.
+7. In the input box below the column name, enter the desired key by adding `->>` before the key, example `->>city`.
+
+<img style={{marginBottom:'15px'}} className="screenshot-full" src="/img/v2-beta/database/newui/flat_json.png" alt="ToolJet Database Date" />
+
+### Nested JSON Object
+
+A nested JSON object is a JSON structure that contains key-value pairs, where some values are themselves JSON objects or arrays. This creates a hierarchical, multi-level structure with nested layers, which can represent complex relationships between data elements.
+
+1. Add **ToolJet DB** as the Data Source from the query panel.
+2. Select **GUI mode** (else you can select SQL mode as well).
+3. Select the **Table name**.
+4. Select the desired operation from the dropdown.
+5. Click on **+ Add Condition** button in front of Filter.
+6. Choose column that consist JSON Data, choose the desired operation and enter the value.
+7. In the input box below the column name, enter the desired JSON path by adding `->` before each key, example `->user->preferences->settings->notifications->sms->alerts->appointments->cancellations`. 
+
+<img style={{marginBottom:'15px'}} className="screenshot-full" src="/img/v2-beta/database/newui/nested_json_gui.png" alt="ToolJet Database Date" />
+
+**Note:** You can use `->` to access nested JSON fields and use `->>` to access the text.
+
+</div>
 
 
 :::info

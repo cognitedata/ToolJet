@@ -3,13 +3,13 @@ id: workflow-triggers
 title: Triggers
 ---
 
-Triggers can be used to execute a workflow. Currently, ToolJet supports two types of triggers: [Webhooks](#webhooks) and [Manual](#manual).
+Triggers can be used to execute a workflow. Currently, ToolJet supports three types of triggers: webhooks, scheduled triggers, and manual triggers.
 
 <div style={{textAlign: 'center'}}>
     <img style={{ border:'0', marginBottom:'15px', borderRadius:'5px', boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.2)' }} className="screenshot-full" src="/img/workflows/triggers/triggers.png" alt="Triggers" />
 </div>
 
-<div style={{paddingTop:'24px', paddingBottom:'24px'}}>
+<div style={{paddingTop:'24px'}}>
 
 ## Webhooks
 
@@ -17,9 +17,9 @@ A webhook trigger allows you to run the workflow when a webhook is received. You
 
 </div>
 
-<div style={{paddingTop:'24px', paddingBottom:'24px'}}>
+<div style={{paddingTop:'24px'}}>
 
-### Creating a Webhook Trigger
+#### Creating a Webhook Trigger
 - Click on the **Triggers** option in the left panel to open the Triggers tab.
 
   <div style={{textAlign: 'center'}}>
@@ -96,7 +96,7 @@ A webhook trigger allows you to run the workflow when a webhook is received. You
 
 </div>
 
-<div style={{paddingTop:'24px', paddingBottom:'24px'}}>
+<div style={{paddingTop:'24px'}}>
 
 ### Restrictions on Usage of Webhook Triggers
 
@@ -120,7 +120,27 @@ For Virtual Private Clouds (VPCs), restrict access only to the `{TOOLJET_HOST}/a
 
 </div>
 
-<div style={{paddingTop:'24px', paddingBottom:'24px'}}>
+<div style={{paddingTop:'24px'}}>
+
+## Scheduler
+
+You can automate workflow execution by adding scheduled triggers that run at regular intervals. Use **Interval mode** to set the frequency with predefined options or **Cron mode** for more granular control with cron syntax. Additionally, you can specify a timezone to ensure the schedule aligns with local time. 
+
+#### Interval Mode
+
+Interval mode is ideal for simple schedules. For example, you can trigger tasks every 10 minutes, run hourly updates, or initiate weekly routines. Just specify the interval in minutes, hours, days, weeks, or months to suit your needs.
+
+<div style={{textAlign: 'center', paddingBottom: '15px'}}>
+    <img className="screenshot-full" src="/img/workflows/scheduler/interval-mode.png" alt="Scheduler - Interval Mode" />
+</div>
+
+#### Cron Mode
+
+Cron mode offers precise scheduling using cron syntax. It’s perfect for tasks like running workflows daily at 3:15 AM, triggering actions every 15th of the month, or scheduling processes for weekdays only. With cron expressions like 0 9 * * 1 (every Monday at 9 AM), you can fine-tune your triggers with ease.
+
+<div style={{textAlign: 'center', paddingBottom: '15px'}}>
+    <img className="screenshot-full" src="/img/workflows/scheduler/cron-job.png" alt="Scheduler - Cron Mode" />
+</div>
 
 ## Manual
 
@@ -134,7 +154,7 @@ In the application, simply click on the `+ Add` button in the query panel and se
 
 </div>
 
-<div style={{paddingTop:'24px', paddingBottom:'24px'}}>
+<div style={{paddingTop:'24px'}}>
 
 ### Passing Parameters
 
